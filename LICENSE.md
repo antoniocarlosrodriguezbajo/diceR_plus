@@ -1,5 +1,5 @@
 # MIT License
-Copyright (c) 2020 Derek Chiu
+Copyright (c) 2020 Derek Chiu   
 Copyright (c) 2025 Antonio Carlos Rodriguez Bajo
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
