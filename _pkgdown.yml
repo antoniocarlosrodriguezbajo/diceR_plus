@@ -1,0 +1,46 @@
+url: https://alinetalhouk.github.io/diceR/
+
+template:
+  bootstrap: 5
+  bootswatch: cerulean
+  bslib:
+    primary: "#0054AD"
+
+navbar:
+  left:
+  - text: Reference
+    href: reference/index.html
+  - text: Articles
+    href: articles/index.html
+  - text: News
+    href: news/index.html
+
+reference:
+- title: Functions
+  contents:
+  - starts_with("consensus_")
+  - starts_with("graph_")
+  - starts_with("ev_")
+  - starts_with("impute_")
+  - starts_with("pcn_")
+  - dice
+  - CSPA
+  - k_modes
+  - majority_voting
+  - LCE
+  - LCA
+  - PAC
+  - cts
+  - srs
+  - asrs
+  - compactness
+  - prepare_data
+  - relabel_class
+  - min_fnorm
+  - sigclust
+- title: Data
+  contents:
+  - hgsc
+- title: Package Documentation
+  contents:
+  - diceR-package
