@@ -1,21 +1,19 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# diceR <a href='https://alinetalhouk.github.io/diceR/'><img src='man/figures/logo.png' align="right" width="120" /></a>
+# diceR_plus
 
 <!-- badges: start -->
-
-[![R-CMD-check](https://github.com/AlineTalhouk/diceR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/AlineTalhouk/diceR/actions/workflows/R-CMD-check.yaml)
-[![Codecov test
-coverage](https://codecov.io/gh/AlineTalhouk/diceR/graph/badge.svg)](https://app.codecov.io/gh/AlineTalhouk/diceR)
-[![CRAN
-status](https://www.r-pkg.org/badges/version/diceR)](https://CRAN.R-project.org/package=diceR)
-[![CRAN RStudio mirror
-downloads](https://cranlogs.r-pkg.org/badges/grand-total/diceR?color=orange)](https://r-pkg.org/pkg/diceR)
-
 <!-- badges: end -->
 
 ## Overview
+
+This is an extension of the package diceR. It is designed to support the
+Master’s Thesis of Antonio Carlos Rodriguez Bajo: *A Proposal for an
+Ensemble of Clustering Models for High-Dimensional Data*.
+
+It introduces unsupervised feature selection, dimensionality reduction
+and other enhancements.
 
 The goal of `diceR` is to provide a systematic framework for generating
 diverse cluster ensembles in R. There are a lot of nuances in cluster
@@ -63,7 +61,7 @@ functions used to aggregated them in `cons.funs`.
 ``` r
 library(diceR)
 data(hgsc)
-obj <- dice(
+obj <- dice_plus(
   hgsc,
   nk = 4,
   reps = 5,
@@ -78,6 +76,13 @@ The first few cluster assignments are shown below:
 
 ``` r
 knitr::kable(head(obj$clusters))
+#> Warning: 'xfun::attr()' is deprecated.
+#> Use 'xfun::attr2()' instead.
+#> See help("Deprecated")
+
+#> Warning: 'xfun::attr()' is deprecated.
+#> Use 'xfun::attr2()' instead.
+#> See help("Deprecated")
 ```
 
 |                     | kmodes | majority |
@@ -94,6 +99,13 @@ internal evaluation indices:
 
 ``` r
 knitr::kable(obj$indices$ii$`4`)
+#> Warning: 'xfun::attr()' is deprecated.
+#> Use 'xfun::attr2()' instead.
+#> See help("Deprecated")
+
+#> Warning: 'xfun::attr()' is deprecated.
+#> Use 'xfun::attr2()' instead.
+#> See help("Deprecated")
 ```
 
 |  | Algorithms | calinski_harabasz | dunn | pbm | tau | gamma | c_index | davies_bouldin | mcclain_rao | sd_dis | ray_turi | g_plus | silhouette | s_dbw | Compactness | Connectivity |

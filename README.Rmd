@@ -12,17 +12,17 @@ knitr::opts_chunk$set(
   out.width = "100%"
 )
 ```
-# diceR <a href='https://alinetalhouk.github.io/diceR/'><img src='man/figures/logo.png' align="right" width="120" /></a>
+# diceR_plus
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/AlineTalhouk/diceR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/AlineTalhouk/diceR/actions/workflows/R-CMD-check.yaml)
-[![Codecov test coverage](https://codecov.io/gh/AlineTalhouk/diceR/graph/badge.svg)](https://app.codecov.io/gh/AlineTalhouk/diceR)
-[![CRAN status](https://www.r-pkg.org/badges/version/diceR)](https://CRAN.R-project.org/package=diceR)
-[![CRAN RStudio mirror downloads](https://cranlogs.r-pkg.org/badges/grand-total/diceR?color=orange)](https://r-pkg.org/pkg/diceR)
 
 <!-- badges: end -->
 
 ## Overview
+
+This is an extension of the package diceR. It is designed to support the Master's Thesis of Antonio Carlos Rodriguez Bajo: *A Proposal for an Ensemble of Clustering Models for High-Dimensional Data*.
+
+It introduces unsupervised feature selection, dimensionality reduction and other enhancements.
 
 The goal of `diceR` is to provide a systematic framework for generating diverse cluster ensembles in R. There are a lot of nuances in cluster analysis to consider. We provide a process and a suite of functions and tools to implement a systematic framework for cluster discovery, guiding the user through the generation of a diverse clustering solutions from data, ensemble formation, algorithm selection and the arrival at a final consensus solution. We have additionally developed visual and analytical validation tools to help with the assessment of the final result. We implemented a wrapper function `dice()` that allows the user to easily obtain results and assess them. Thus, the package is accessible to both end user with limited statistical knowledge. Full access to the package is available for informaticians and statisticians and the functions are easily expanded. More details can be found in our companion paper published at [BMC Bioinformatics](https://doi.org/10.1186/s12859-017-1996-y).
 
@@ -48,7 +48,7 @@ The following example shows how to use the main function of the package, `dice()
 ```{r example, results='hide'}
 library(diceR)
 data(hgsc)
-obj <- dice(
+obj <- dice_plus(
   hgsc,
   nk = 4,
   reps = 5,
