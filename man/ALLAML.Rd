@@ -3,7 +3,7 @@
 \docType{data}
 \name{ALLAML}
 \alias{ALLAML}
-\title{Gene Expression Data for Acute Leukemia (ALLAML)}
+\title{Gene Expression Data for Acute Leukemia}
 \format{
 A data frame with 72 rows and 7130 columns:
 \describe{

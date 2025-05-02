@@ -3,7 +3,7 @@
 \docType{data}
 \name{prostate_ge}
 \alias{prostate_ge}
-\title{Gene Expression Data for Prostate Cancer (Prostate-GE)}
+\title{Gene Expression Data for Prostate Cancer}
 \format{
 A data frame with 102 rows and 5967 columns:
 \describe{

@@ -24,7 +24,7 @@
 #' A data frame with 231 rows and 1051 columns.
 "meats"
 
-#' Gene Expression Data for Acute Leukemia (ALLAML)
+#' Gene Expression Data for Acute Leukemia
 #'
 #' This dataset contains gene expression profiles from patients with
 #' Acute Lymphoblastic Leukemia (ALL) and Acute Myeloid Leukemia (AML).
@@ -45,7 +45,7 @@
 "ALLAML"
 
 #'
-#' Gene Expression Data for Prostate Cancer (Prostate-GE)
+#' Gene Expression Data for Prostate Cancer
 #'
 #' This dataset contains gene expression profiles from patients with
 #' prostate cancer. The data includes expression levels for 5966 genes across 102 patient samples.
@@ -65,7 +65,7 @@
 "prostate_ge"
 
 #'
-#' COIL-20 Object Image Dataset (COIL20)
+#' COIL-20 Object Image Dataset
 #'
 #' The COIL-20 dataset consists of grayscale images of 20 distinct objects. Each object
 #' was placed on a turntable and imaged at pose intervals of 5 degrees, resulting in 72 images per object (totaling 1,440 images).
@@ -83,3 +83,41 @@
 #' Nene, S.A., Nayar, S.K., & Murase, H. (1996). Columbia Object Image Library (COIL-20). Technical Report CUCS-005-96, Department of Computer Science, Columbia University.
 #'
 "COIL20"
+#
+#'
+#' warpAR10P Face Image Dataset
+#'
+#' The warpAR10P dataset consists of grayscale face images from 10 distinct individuals. Each individual's face was imaged under varying conditions, with each image warped for alignment, resulting in high-dimensional data.
+#'
+#' Each row represents an image sample, while each column (except the last) corresponds to a pixel value.
+#' The final column `Person` indicates the subject's identity (from 1 to 10).
+#'
+#' @format A data frame with 130 rows and 2,401 columns:
+#' \describe{
+#'   \item{X1, X2, ..., X2400}{Grayscale pixel values (numeric).}
+#'   \item{Person}{Integer indicating the subject label (1–10).}
+#' }
+#'
+#' @references
+#' Li, J., Wang, K., et al. (scikit-feature). WarpAR10P available at: https://jundongl.github.io/scikit-feature/datasets.html
+#'
+"warpAR10P"
+#
+#'
+#' warpPIE10P Face Image Dataset
+#'
+#' The warpPIE10P dataset consists of grayscale face images from 10 distinct individuals, sourced from the PIE face database. Each subject's face was captured under varying conditions, and all images were geometrically warped for alignment, resulting in high-dimensional feature data.
+#'
+#' Each row represents an image sample, while each column (except the last) corresponds to a pixel value.
+#' The final column `Person` indicates the subject's identity (from 1 to 10).
+#'
+#' @format A data frame with 210 rows and 2,421 columns:
+#' \describe{
+#'   \item{X1, X2, ..., X2420}{Grayscale pixel values (numeric).}
+#'   \item{Person}{Integer indicating the subject label (1–10).}
+#' }
+#'
+#' @references
+#' Li, J., Wang, K., et al. (scikit-feature). WarpPIE10P datasets available at: https://jundongl.github.io/scikit-feature/datasets.html
+#'
+"warpPIE10P"

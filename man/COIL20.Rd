@@ -3,7 +3,7 @@
 \docType{data}
 \name{COIL20}
 \alias{COIL20}
-\title{COIL-20 Object Image Dataset (COIL20)}
+\title{COIL-20 Object Image Dataset}
 \format{
 A data frame with 1,440 rows and 1,025 columns:
 \describe{

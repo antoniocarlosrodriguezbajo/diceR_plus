@@ -16,10 +16,9 @@ Benchmark Datasets
 | CBIR | Images | Content-based image retrieval | 1,545 | 183 | 8 | Dy et al. (1999) | Fern & Lin (2003) | KM, SpeCl, RP, FW, CAS, JC, CH, CSPA | CH + CSPA | NMI=0.341 |
 | **COIL20** | Images | Columbia Object Image Library (20 objects, multi-view grayscale images) | 1,440 | 1024 | 20 | Nene et al. (1996) | You et al. (2023) | KM + varied UFS | KM + NNSE | ACC=71.8, NMI=76.2 |
 | JAFFE | Images | Facial expression images of Japanese female subjects, used for facial expression recognition and clustering tasks | 213 | 676 | 10 | Lyons et al. (1999) | You et al. (2023) | KM + varied UFS | KM + QS | ACC=82.4, NMI=87.4 |
-| PIE10P | Images | Subset of PIE (Pose, Illumination, and Expression) face images from 10 people | 210 | 2420 | 10 | Gross et al. (2008) | Guo et al. (2018) | KM + varied UFS | KM + DGUFS | ACC=51.9, NMI=55.0 |
 | UMIST | Images | Face images from 20 individuals | 575 | 644 | 20 | Graham and Allinson (1998) | Guo et al. (2018) | KM + varied UFS | KM + DGUFS | ACC=57.1, NMI=74.4 |
-| warpAR10P | Images | Subset of AR face images from 10 people, warping applied (multi-view grayscale) | 130 | 2400 | 10 | Li, J., Wang, K., et al. | You et al. (2023) | KM + varied UFS | KM + NNSE | ACC=51.9, NMI=39.4 |
-| warpPIE10P | Images | Subset of PIE (Pose, Illumination, and Expression) face images from 10 people, warping applied (multi-view grayscale) | 210 | 2420 | 10 | Li, J., Wang, K., et al. | You et al. (2023) | KM + varied UFS | KM + NNSE | ACC=58.1, NMI=52.2 |
+| **warpAR10P** | Images | Subset of AR face images from 10 people, warping applied (multi-view grayscale) | 130 | 2400 | 10 | Li, J., Wang, K., et al. | You et al. (2023) | KM + varied UFS | KM + NNSE | ACC=51.9, NMI=39.4 |
+| **warpPIE10P** | Images | Subset of PIE (Pose, Illumination, and Expression) face images from 10 people, warping applied (multi-view grayscale) | 210 | 2420 | 10 | Li, J., Wang, K., et al. | You et al. (2023) | KM + varied UFS | KM + NNSE | ACC=58.1, NMI=52.2 |
 | ISOLET6 | Speech | Subset (6 classes) of the ISOLET dataset, spoken letter recognition, high-dimensional features | 1,440 | 617 | 6 | Blake & Merz (1998) | Fern & Lin (2008) | KM, SpeCl, RP, FW, CAS, JC, CH, CSPA | CSPA + CAS | NMI=0.851 |
 
 Datasets in bold are included in diceR_plus.
@@ -82,10 +81,6 @@ Datasets in bold are included in diceR_plus.
   eigensignatures for general purpose face recognition. *Face
   Recognition* pp. 446–456, 1998.
 
-- Gross, R., Matthews, I., Cohn, J., Kanade, T., Baker, S. (2008).
-  Multi-PIE. In *IEEE International Conference on Automatic Face and
-  Gesture Recognition*, 1–8.
-
 - Golub, T.R., Slonim, D.K., Tamayo, P., Huard, C., Gaasenbeek, M.,
   Mesirov, J.P., et al. (1999). Molecular classification of cancer:
   Class discovery and class prediction by gene expression monitoring.
@@ -95,8 +90,7 @@ Datasets in bold are included in diceR_plus.
   Selection. *Proceedings of the Thirty-Second AAAI Conference on
   Artificial Intelligence (AAAI-18)*, **32**, 2232–2239.
 
-- Li, J., Wang, K., et al. (scikit-feature). WarpAR10P and WarpPIE10P
-  datasets. Available at:
+- Li, J., Wang, K., et al. (scikit-feature). Dataset available at:
   <https://jundongl.github.io/scikit-feature/datasets.html>
 
 - Lyons, M.J., Budynek, J., Akamatsu, S. (1999). Automatic
