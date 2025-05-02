@@ -3,7 +3,7 @@ Benchmark Datasets
 
 | Dataset Name | Domain | Description | samples | Features | Groups | Dataset Reference | Main Experimental Reference | Methods applied† | Best Method | Best Metrics |
 |----|----|----|----|----|----|----|----|----|----|----|
-| Meats | Food | Homogenized raw meat samples from 5 animal species (Beef, Chicken, Lamb, Pork, Turkey), measured by near infrared spectroscopy | 231 | 1050 | 5 | Downey et al. (2000) | Anderlucci et al. (2022) | AffPr, GMM, HDDC-B, HDDC-C, KM, PAM, RP, RPEClu, SpeCl, Ward | RPEClu | ARI=0.32 |
+| Meats | Food | Homogenized raw meat samples from 5 animal species (Beef, Chicken, Lamb, Pork, Turkey), measured by near infrared spectroscopy | 231 | 1050 | 5 | McElhinney et al. (1999) | Anderlucci et al. (2022) | AffPr, GMM, HDDC-B, HDDC-C, KM, PAM, RP, RPEClu, SpeCl, Ward | RPEClu | ARI=0.32 |
 | ALLAML | Genomics | Acute lymphoblastic leukemia (ALL) and acute myeloid leukemia (AML) mass spectrometry data | 72 | 7129 | 2 | Fodor (1997) | Guo et al. (2018) | KM + varied UFS | KM + DGUFS | ACC=78.4, NMI=19.1 |
 | CNS tumors | Genomics | Embryonal CNS tumors: medulloblastomas, PNET, rhabdoid tumors, gliomas, normal cerebellum | 48 | 1000 | 5 | Pomeroy et al. (2002) | Monti et al. (2003) | CC, HC, SOM | HC + CC | RAND=0.549 |
 | Leukemia | Genomics | Bone marrow samples from AML, T-lineage ALL, and B-lineage ALL leukemia patients | 38 | 999 | 3 | Golub et al. (1999) | Monti et al. (2003) | CC, HC, SOM | SOM + CC | RAND=0.721 |
@@ -66,11 +66,6 @@ Benchmark Datasets
 - Blake, C.L., Merz, C.J. (1998). UCI repository of machine learning
   databases. University of California, Irvine, CA.
 
-- Downey, G., McElhinney, J., Fearn, T. (2000). Species identification
-  in selected raw homogenized meats by reflectance spectroscopy in the
-  mid-infrared, near-infrared, and visible ranges. *Applied
-  Spectroscopy*, **54**(6), 894–899.
-
 - Dy, J., Brodley, C.E., Kak, A., Shyu, C., Broderick, L.S. (1999). The
   customized queries approach to CBIR using EM. Proceedings of IEEE
   Conference on Computer Vision and Pattern Recognition, 400–406.
@@ -105,6 +100,11 @@ Benchmark Datasets
 - Lyons, M.J., Budynek, J., Akamatsu, S. (1999). Automatic
   classification of single facial images. *IEEE Transactions on Pattern
   Analysis and Machine Intelligence*, **21**(12), 1357–1362.
+
+- McElhinney, J., Downey, G., Fearn, T. (1999). Chemometric processing
+  of visible and near infrared reflectance spectra for species
+  identification in selected raw homogenised meats. *Journal of Near
+  Infrared Spectroscopy*, **7**, 145–154.
 
 - Monti, S., Tamayo, P., Mesirov, J.P., Golub, T.R. (2003). Consensus
   clustering: A resampling-based method for class discovery and

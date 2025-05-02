@@ -15,10 +15,8 @@ This dataset contains spectral measurements (400nm-2049nm) of 231 meat samples
 from five species: Chicken, Beef, Turkey, Lamb, and Pork. The first 1050
 columns record spectral data, while the last column indicates the sample type.
 }
-\details{
-The original publication introducing and describing the meat data is:
-
-McElhinney, J., Downey, G., & Fearn, T. (1999). Chemometric processing of visible
+\references{
+McElhinney, J., Downey, G., Fearn, T. (1999). Chemometric processing of visible
 and near infrared reflectance spectra for species identification in selected raw homogenised meats.
 \emph{Journal of Near Infrared Spectroscopy, 7}, 145–154.
 }

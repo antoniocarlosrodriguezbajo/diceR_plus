@@ -40,6 +40,7 @@ Imports:
     purrr (>= 0.2.3),
     RankAggreg,
     Rcpp,
+    R.matlab,
     stringr,
     tidyr,
     yardstick
