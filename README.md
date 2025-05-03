@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# diceR_plus
+# diceRplus
 
 <!-- badges: start -->
 <!-- badges: end -->
@@ -14,6 +14,8 @@ Ensemble of Clustering Models for High-Dimensional Data*.
 
 It introduces unsupervised feature selection, dimensionality reduction
 and other enhancements.
+
+[Benchmark Datasets](./benchmark_datasets.md)
 
 The goal of `diceR` is to provide a systematic framework for generating
 diverse cluster ensembles in R. There are a lot of nuances in cluster
@@ -60,6 +62,19 @@ functions used to aggregated them in `cons.funs`.
 
 ``` r
 library(diceR)
+#> 
+#> Attaching package: 'diceR'
+#> The following objects are masked _by_ '.GlobalEnv':
+#> 
+#>     ALLAML, COIL20, meats, prostate_ge, warpAR10P, warpPIE10P
+#> The following objects are masked from 'package:diceRplus':
+#> 
+#>     ALLAML, asrs, COIL20, compactness, consensus_cluster, consensus_combine,
+#>     consensus_evaluate, consensus_matrix, CSPA, cts, dice, dice_plus, ev_confmat,
+#>     ev_nmi, graph_all, graph_cdf, graph_delta_area, graph_heatmap, graph_tracking,
+#>     impute_knn, impute_missing, k_modes, LCA, LCE, majority_voting, meats, min_fnorm,
+#>     PAC, pcn_select, pcn_simulate, prepare_data, prostate_ge, relabel_class, sigclust,
+#>     srs, warpAR10P, warpPIE10P
 data(hgsc)
 obj <- dice_plus(
   hgsc,

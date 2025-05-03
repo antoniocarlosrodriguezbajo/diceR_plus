@@ -10,10 +10,10 @@ ALLAML <- as.data.frame(ALLAML_data$X)
 colnames(ALLAML) <- paste0("X", seq_len(ncol(ALLAML)))
 
 # Extract class labels (Y) separately
-Diagnosis <- factor(ALLAML_data$Y, labels = c("AML", "ALL"))
+class <- factor(ALLAML_data$Y, labels = c("AML", "ALL"))
 
 # Add Diagnosis column to the dataframe
-ALLAML$Diagnosis <- Diagnosis
+ALLAML$class <- class
 
 # Save the processed data in the 'data/' folder for package use
 usethis::use_data(ALLAML, overwrite = TRUE, compress = "xz")

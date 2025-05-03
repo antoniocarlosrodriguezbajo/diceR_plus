@@ -8,7 +8,7 @@
 A data frame with 102 rows and 5967 columns:
 \describe{
 \item{X1, X2, ..., X5966}{Gene expression values (numeric).}
-\item{Diagnosis}{Factor indicating the sample type (\code{Tumor} or \code{Normal}).}
+\item{class}{Factor indicating the sample type (\code{Tumor} or \code{Normal}).}
 }
 }
 \usage{

@@ -12,7 +12,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 
 // connectivity_matrix
 NumericMatrix connectivity_matrix(NumericVector x);
-RcppExport SEXP _diceR_connectivity_matrix(SEXP xSEXP) {
+RcppExport SEXP _diceRplus_connectivity_matrix(SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -23,7 +23,7 @@ END_RCPP
 }
 // indicator_matrix
 NumericMatrix indicator_matrix(NumericVector x);
-RcppExport SEXP _diceR_indicator_matrix(SEXP xSEXP) {
+RcppExport SEXP _diceRplus_indicator_matrix(SEXP xSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -34,12 +34,12 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_diceR_connectivity_matrix", (DL_FUNC) &_diceR_connectivity_matrix, 1},
-    {"_diceR_indicator_matrix", (DL_FUNC) &_diceR_indicator_matrix, 1},
+    {"_diceRplus_connectivity_matrix", (DL_FUNC) &_diceRplus_connectivity_matrix, 1},
+    {"_diceRplus_indicator_matrix", (DL_FUNC) &_diceRplus_indicator_matrix, 1},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_diceR(DllInfo *dll) {
+RcppExport void R_init_diceRplus(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

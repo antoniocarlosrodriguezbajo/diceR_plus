@@ -36,7 +36,7 @@
 #' @format A data frame with 72 rows and 7130 columns:
 #' \describe{
 #'   \item{X1, X2, ..., X7129}{Gene expression values (numeric).}
-#'   \item{Diagnosis}{Factor indicating the leukemia type (`ALL` or `AML`).}
+#'   \item{class}{Factor indicating the leukemia type (`ALL` or `AML`).}
 #' }
 #'
 #' @references
@@ -56,7 +56,7 @@
 #' @format A data frame with 102 rows and 5967 columns:
 #' \describe{
 #'   \item{X1, X2, ..., X5966}{Gene expression values (numeric).}
-#'   \item{Diagnosis}{Factor indicating the sample type (`Tumor` or `Normal`).}
+#'   \item{class}{Factor indicating the sample type (`Tumor` or `Normal`).}
 #' }
 #'
 #' @references
@@ -76,7 +76,7 @@
 #' @format A data frame with 1,440 rows and 1,025 columns:
 #' \describe{
 #'   \item{X1, X2, ..., X1024}{Grayscale pixel values (numeric).}
-#'   \item{Object}{Integer indicating the object label (1–20).}
+#'   \item{class}{Factor indicating the object label (1–20).}
 #' }
 #'
 #' @references
@@ -95,7 +95,7 @@
 #' @format A data frame with 130 rows and 2,401 columns:
 #' \describe{
 #'   \item{X1, X2, ..., X2400}{Grayscale pixel values (numeric).}
-#'   \item{Person}{Integer indicating the subject label (1–10).}
+#'   \item{class}{Factor indicating the subject label (1–10).}
 #' }
 #'
 #' @references
@@ -114,7 +114,7 @@
 #' @format A data frame with 210 rows and 2,421 columns:
 #' \describe{
 #'   \item{X1, X2, ..., X2420}{Grayscale pixel values (numeric).}
-#'   \item{Person}{Integer indicating the subject label (1–10).}
+#'   \item{class}{Factor indicating the subject label (1–10).}
 #' }
 #'
 #' @references

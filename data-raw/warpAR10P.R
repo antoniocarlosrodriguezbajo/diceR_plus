@@ -10,10 +10,10 @@ warpAR10P <- as.data.frame(warpAR10P_data$X)
 colnames(warpAR10P) <- paste0("X", seq_len(ncol(warpAR10P)))
 
 # Extract class labels (Y) separately
-Person <- factor(warpAR10P_data$Y)
+class <- factor(warpAR10P_data$Y)
 
 # Add Person column to the dataframe
-warpAR10P$Person <- Person
+warpAR10P$class <- class
 
 # Save the processed data in the 'data/' folder for package use
 usethis::use_data(warpAR10P, overwrite = TRUE, compress = "xz")

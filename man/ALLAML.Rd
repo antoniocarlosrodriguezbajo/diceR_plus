@@ -8,7 +8,7 @@
 A data frame with 72 rows and 7130 columns:
 \describe{
 \item{X1, X2, ..., X7129}{Gene expression values (numeric).}
-\item{Diagnosis}{Factor indicating the leukemia type (\code{ALL} or \code{AML}).}
+\item{class}{Factor indicating the leukemia type (\code{ALL} or \code{AML}).}
 }
 }
 \usage{

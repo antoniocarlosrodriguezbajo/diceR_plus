@@ -8,7 +8,7 @@
 A data frame with 130 rows and 2,401 columns:
 \describe{
 \item{X1, X2, ..., X2400}{Grayscale pixel values (numeric).}
-\item{Person}{Integer indicating the subject label (1–10).}
+\item{class}{Factor indicating the subject label (1–10).}
 }
 }
 \usage{

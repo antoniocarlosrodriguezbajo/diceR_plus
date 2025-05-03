@@ -1,5 +1,5 @@
 Type: Package
-Package: diceR
+Package: diceRplus
 Title: Diverse Cluster Ensemble in R
 Version: 3.0.0
 Authors@R: c(

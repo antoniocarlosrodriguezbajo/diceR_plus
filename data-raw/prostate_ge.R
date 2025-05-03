@@ -10,10 +10,10 @@ prostate_ge <- as.data.frame(prostate_ge_data$X)
 colnames(prostate_ge) <- paste0("X", seq_len(ncol(prostate_ge)))
 
 # Extract class labels (Y) separately
-Diagnosis <- factor(prostate_ge_data$Y, labels = c("normal", "tumor"))
+class <- factor(prostate_ge_data$Y, labels = c("normal", "tumor"))
 
 # Add Diagnosis column to the dataframe
-prostate_ge$Diagnosis <- Diagnosis
+prostate_ge$class <- class
 
 # Save the processed data in the 'data/' folder for package use
 usethis::use_data(prostate_ge, overwrite = TRUE, compress = "xz")

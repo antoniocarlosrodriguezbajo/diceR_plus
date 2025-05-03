@@ -8,7 +8,7 @@
 A data frame with 1,440 rows and 1,025 columns:
 \describe{
 \item{X1, X2, ..., X1024}{Grayscale pixel values (numeric).}
-\item{Object}{Integer indicating the object label (1–20).}
+\item{class}{Factor indicating the object label (1–20).}
 }
 }
 \usage{
