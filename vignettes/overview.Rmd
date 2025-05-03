@@ -1,8 +1,8 @@
 ---
-title: "Cluster Analysis using `diceR`"
+title: "Cluster Analysis using `diceRplus`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Cluster Analysis using `diceR`}
+  %\VignetteIndexEntry{Cluster Analysis using `diceRplus`}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -23,17 +23,17 @@ knitr::opts_chunk$set(
 
 Cluster analysis is a way of "slicing and dicing" data to allow the grouping together of similar entities and the separation of dissimilar ones. Issues arise due to the existence of a diverse number of clustering algorithms, each with different techniques and inputs, and with no universally optimal methodology. Thus, a framework for cluster analysis and validation methods are needed. Our approach is to use cluster ensembles from a diverse set of algorithms. This ensures that the data has been considered from several angles and using a variety of methods. We have currently implemented about 15 clustering algorithms, and we provide a simple framework to add additional algorithms (see `example("consensus_cluster")`). Although results are dependent on the subset of algorithms chosen for the ensemble, the intent is that we capture a variety of clustering outputs and select those that are most consistent with the data.
 
-You can install `diceR` from CRAN with:
+You can install `diceRplus` from CRAN (when available) with:
 
 ```{r install_CRAN, message=FALSE, eval=FALSE}
-install.packages("diceR")
+install.packages("diceRplus")
 ```
 
 Or get the latest development version from GitHub:
 
 ```{r install_github, message=FALSE, eval=FALSE}
 # install.packages("devtools")
-devtools::install_github("AlineTalhouk/diceR")
+devtools::install_github("antoniocarlosrodriguezbajo/diceRplus")
 ```
 
 ```{r load}

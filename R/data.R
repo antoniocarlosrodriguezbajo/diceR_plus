@@ -65,6 +65,27 @@
 "prostate_ge"
 
 #'
+#' Gene Expression Data for Lymphoma
+#'
+#' This dataset contains gene expression profiles from patients with
+#' lymphoma. The data includes expression levels for 4026 genes across 62 patient samples.
+#'
+#' Each row represents a patient, while each column (except the last) corresponds
+#' to a gene. The final column `class` classifies the patients as either `DLBCL`
+#' (Diffuse large B-cell lymphoma), `FL` (Follicular lymphoma), or `CLL` (Chronic lymphocytic leukemia).
+#'
+#' @format A data frame with 62 rows and 4027 columns:
+#' \describe{
+#'   \item{X1, X2, ..., X4026}{Gene expression values (numeric).}
+#'   \item{class}{Factor indicating the sample type (`DLBCL`, `FL`, or `CLL`).}
+#' }
+#'
+#' @references
+#' Alizadeh, A. A.; Eisen, M. B.; Davis, R. E.; Ma, C.; Lossos, I. S.; Rosenwald, A.; Boldrick, J. C.; Sabet, H.; Tran, T.; Yu, X.; et al. (2000). Distinct types of diffuse large B-cell lymphoma identified by gene expression profiling. *Nature*, **403**(6769), 503–511.
+#'
+"lymphoma"
+
+#'
 #' COIL-20 Object Image Dataset
 #'
 #' The COIL-20 dataset consists of grayscale images of 20 distinct objects. Each object

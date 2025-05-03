@@ -1,4 +1,4 @@
-#' @useDynLib diceR, .registration = TRUE
+#' @useDynLib diceRplus, .registration = TRUE
 #' @keywords internal
 #' @docType package
 #' @import ggplot2
