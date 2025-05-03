@@ -30,17 +30,17 @@ The goal of `diceR` is to provide a systematic framework for generating diverse 
 
 ## Installation
 
-You can install `diceR` from CRAN with:
+You can install `diceRplus` from CRAN (when available) with:
 
 ```{r install_CRAN, message=FALSE, eval=FALSE}
-install.packages("diceR")
+install.packages("diceRplus")
 ```
 
 Or get the latest development version from GitHub:
 
 ```{r install_github, message=FALSE, eval=FALSE}
 # install.packages("devtools")
-devtools::install_github("AlineTalhouk/diceR")
+devtools::install_github("antoniocarlosrodriguezbajo/diceRplus")
 ```
 
 ## Example
@@ -48,7 +48,7 @@ devtools::install_github("AlineTalhouk/diceR")
 The following example shows how to use the main function of the package, `dice()`. A data matrix `hgsc` contains a subset of gene expression measurements of High Grade Serous Carcinoma Ovarian cancer patients from the Cancer Genome Atlas publicly available datasets. Samples as rows, features as columns. The function below runs the package through the `dice()` function. We specify (a range of) `nk` clusters over `reps` subsamples of the data containing 80% of the full samples. We also specify the clustering `algorithms` to be used and the ensemble functions used to aggregated them in `cons.funs`.
 
 ```{r example, results='hide'}
-library(diceR)
+library(diceRplus)
 data(hgsc)
 obj <- dice_plus(
   hgsc,

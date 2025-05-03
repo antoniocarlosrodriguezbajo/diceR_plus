@@ -35,17 +35,17 @@ Bioinformatics](https://doi.org/10.1186/s12859-017-1996-y).
 
 ## Installation
 
-You can install `diceR` from CRAN with:
+You can install `diceRplus` from CRAN (when available) with:
 
 ``` r
-install.packages("diceR")
+install.packages("diceRplus")
 ```
 
 Or get the latest development version from GitHub:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("AlineTalhouk/diceR")
+devtools::install_github("antoniocarlosrodriguezbajo/diceRplus")
 ```
 
 ## Example
@@ -61,20 +61,7 @@ specify the clustering `algorithms` to be used and the ensemble
 functions used to aggregated them in `cons.funs`.
 
 ``` r
-library(diceR)
-#> 
-#> Attaching package: 'diceR'
-#> The following objects are masked _by_ '.GlobalEnv':
-#> 
-#>     ALLAML, COIL20, meats, prostate_ge, warpAR10P, warpPIE10P
-#> The following objects are masked from 'package:diceRplus':
-#> 
-#>     ALLAML, asrs, COIL20, compactness, consensus_cluster, consensus_combine,
-#>     consensus_evaluate, consensus_matrix, CSPA, cts, dice, dice_plus, ev_confmat,
-#>     ev_nmi, graph_all, graph_cdf, graph_delta_area, graph_heatmap, graph_tracking,
-#>     impute_knn, impute_missing, k_modes, LCA, LCE, majority_voting, meats, min_fnorm,
-#>     PAC, pcn_select, pcn_simulate, prepare_data, prostate_ge, relabel_class, sigclust,
-#>     srs, warpAR10P, warpPIE10P
+library(diceRplus)
 data(hgsc)
 obj <- dice_plus(
   hgsc,
