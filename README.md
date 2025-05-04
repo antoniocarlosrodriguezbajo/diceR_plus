@@ -8,14 +8,16 @@
 
 ## Overview
 
-This is an extension of the package diceR. It is designed to support the
-Master’s Thesis of Antonio Carlos Rodriguez Bajo: *A Proposal for an
-Ensemble of Clustering Models for High-Dimensional Data*.
+The package `diceRplus` extends the functionality of `diceR`. It is
+designed to support the Master’s Thesis of Antonio Carlos Rodriguez
+Bajo, *A Proposal for an Ensemble of Clustering Models for
+High-Dimensional Data*.
 
-It introduces unsupervised feature selection, dimensionality reduction
-and other enhancements.
+`diceRplus` introduces enhancements such as unsupervised feature
+selection and dimensionality reduction, along with other improvements.
 
-[Benchmark Datasets](./benchmark_datasets.md)
+You can find the description of the [Benchmark Datasets are
+here](./benchmark_datasets.md)
 
 The goal of `diceR` is to provide a systematic framework for generating
 diverse cluster ensembles in R. There are a lot of nuances in cluster
@@ -78,13 +80,6 @@ The first few cluster assignments are shown below:
 
 ``` r
 knitr::kable(head(obj$clusters))
-#> Warning: 'xfun::attr()' is deprecated.
-#> Use 'xfun::attr2()' instead.
-#> See help("Deprecated")
-
-#> Warning: 'xfun::attr()' is deprecated.
-#> Use 'xfun::attr2()' instead.
-#> See help("Deprecated")
 ```
 
 |                     | kmodes | majority |
@@ -101,13 +96,6 @@ internal evaluation indices:
 
 ``` r
 knitr::kable(obj$indices$ii$`4`)
-#> Warning: 'xfun::attr()' is deprecated.
-#> Use 'xfun::attr2()' instead.
-#> See help("Deprecated")
-
-#> Warning: 'xfun::attr()' is deprecated.
-#> Use 'xfun::attr2()' instead.
-#> See help("Deprecated")
 ```
 
 |  | Algorithms | calinski_harabasz | dunn | pbm | tau | gamma | c_index | davies_bouldin | mcclain_rao | sd_dis | ray_turi | g_plus | silhouette | s_dbw | Compactness | Connectivity |
