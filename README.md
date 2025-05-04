@@ -16,8 +16,8 @@ High-Dimensional Data*.
 `diceRplus` introduces enhancements such as unsupervised feature
 selection and dimensionality reduction, along with other improvements.
 
-You can find the description of the [Benchmark Datasets are
-here](./benchmark_datasets.md)
+You can find the description of the [Benchmark Datasets
+here](./benchmark_datasets.md).
 
 The goal of `diceR` is to provide a systematic framework for generating
 diverse cluster ensembles in R. There are a lot of nuances in cluster
