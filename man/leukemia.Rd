@@ -5,7 +5,7 @@
 \alias{leukemia}
 \title{Gene Expression Data for Leukemia}
 \format{
-A data frame with 38 rows and 7,129 columns:
+A data frame with 38 rows and 7,130 columns:
 \describe{
 \item{AFFX.BioB.5_at, AFFX.BioB.M_at, ..., Z78285_f_at}{Gene expression values (numeric).}
 \item{class}{Factor indicating the leukemia subtype (\code{AML}, \code{ALL-B}, or \code{ALL-T}).}

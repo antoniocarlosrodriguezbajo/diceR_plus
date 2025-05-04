@@ -107,6 +107,35 @@
 #'
 "leukemia"
 
+#' Gene Expression Data for Lung Cancer
+#'
+#' This dataset contains gene expression profiles from human lung tissue samples,
+#' including both tumor and normal tissues. The data encompasses expression levels
+#' for 3,313 genes across 203 samples. The samples represent four known classes:
+#' Adenocarcinoma (AD), Squamous Cell Carcinoma (SQ), Carcinoid (COID), and
+#' Normal Lung (NL). The AD class is known to be highly heterogeneous, and
+#' substructure is believed to exist within this group.
+#'
+#' Each row represents a patient sample, while each column (except the last) corresponds
+#' to a gene. The final column `class` indicates the sample type.
+#'
+#' @format A data frame with 203 rows and 3,313 columns:
+#' \describe{
+#'   \item{X1, X2, ..., X3313}{Gene expression values (numeric).}
+#'   \item{class}{Factor indicating the tissue type (`AD`, `SQ`, `COID`, or `NL`).}
+#' }
+#'
+#' @details
+#' The samples comprise 139 adenocarcinomas, 21 squamous cell carcinomas, 20 carcinoids,
+#' and 17 normal lung tissues. Gene selection was performed to enrich for class-distinguishing
+#' genes prior to analysis.
+#'
+#' @references
+#' Bhattacharjee, A., et al. (2001). Classification of human lung carcinomas by mRNA expression profiling reveals
+#' distinct adenocarcinoma sub-classes. *Proceedings of the National Academy of Sciences*, **98**(24), 13790–13795.
+#'
+"lung_cancer"
+
 #'
 #' COIL-20 Object Image Dataset
 #'
