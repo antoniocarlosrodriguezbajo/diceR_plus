@@ -17,7 +17,7 @@ ALLAML
 \description{
 This dataset contains gene expression profiles from patients with
 Acute Lymphoblastic Leukemia (ALL) and Acute Myeloid Leukemia (AML).
-The data includes expression levels for 7129 genes across 72 patient samples.
+The data includes expression levels for 7,129 genes across 72 patient samples.
 }
 \details{
 Each row represents a patient, while each column (except the last) corresponds

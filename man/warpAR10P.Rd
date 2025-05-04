@@ -22,6 +22,7 @@ Each row represents an image sample, while each column (except the last) corresp
 The final column \code{Person} indicates the subject's identity (from 1 to 10).
 }
 \references{
-Li, J., Wang, K., et al. (scikit-feature). WarpAR10P available at: https://jundongl.github.io/scikit-feature/datasets.html
+Li, J., Wang, K., et al. (scikit-feature).
+Dataset available at: https://jundongl.github.io/scikit-feature/datasets.html
 }
 \keyword{datasets}

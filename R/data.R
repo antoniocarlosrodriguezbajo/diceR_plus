@@ -28,7 +28,7 @@
 #'
 #' This dataset contains gene expression profiles from patients with
 #' Acute Lymphoblastic Leukemia (ALL) and Acute Myeloid Leukemia (AML).
-#' The data includes expression levels for 7129 genes across 72 patient samples.
+#' The data includes expression levels for 7,129 genes across 72 patient samples.
 #'
 #' Each row represents a patient, while each column (except the last) corresponds
 #' to a gene. The final column `Diagnosis` classifies the patients as either `ALL` or `AML`.
@@ -86,6 +86,28 @@
 "lymphoma"
 
 #'
+#' Gene Expression Data for Leukemia
+#'
+#' This dataset contains gene expression profiles from patients with
+#' leukemia. The data includes expression levels for 999 genes across 38 patient samples.
+#'
+#' Each row represents a patient, while each column (except the last) corresponds
+#' to a gene. The final column `class` classifies the patients as either `AML`
+#' (acute myeloid leukemia), `ALL-B` (B-lineage acute lymphoblastic leukemia), or `ALL-T`
+#' (T-lineage acute lymphoblastic leukemia).
+#'
+#' @format A data frame with 38 rows and 7,130 columns:
+#' \describe{
+#'   \item{AFFX.BioB.5_at, AFFX.BioB.M_at, ..., Z78285_f_at}{Gene expression values (numeric).}
+#'   \item{class}{Factor indicating the leukemia subtype (`AML`, `ALL-B`, or `ALL-T`).}
+#' }
+#'
+#' @references
+#' Golub, T. R.; Slonim, D. K.; Tamayo, P.; Huard, C.; Gaasenbeek, M.; Mesirov, J. P.; Coller, H.; Loh, M. L.; Downing, J. R.; Caligiuri, M. A.; Bloomfield, C. D.; Lander, E. S. (1999). Molecular classification of cancer: class discovery and class prediction by gene expression monitoring. *Science*, **286**(5439), 531–537.
+#'
+"leukemia"
+
+#'
 #' COIL-20 Object Image Dataset
 #'
 #' The COIL-20 dataset consists of grayscale images of 20 distinct objects. Each object
@@ -120,7 +142,8 @@
 #' }
 #'
 #' @references
-#' Li, J., Wang, K., et al. (scikit-feature). WarpAR10P available at: https://jundongl.github.io/scikit-feature/datasets.html
+#' Li, J., Wang, K., et al. (scikit-feature).
+#' Dataset available at: https://jundongl.github.io/scikit-feature/datasets.html
 #'
 "warpAR10P"
 #
@@ -139,6 +162,7 @@
 #' }
 #'
 #' @references
-#' Li, J., Wang, K., et al. (scikit-feature). WarpPIE10P datasets available at: https://jundongl.github.io/scikit-feature/datasets.html
+#' Li, J., Wang, K., et al. (scikit-feature).
+#' Dataset available at: https://jundongl.github.io/scikit-feature/datasets.html
 #'
 "warpPIE10P"
