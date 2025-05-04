@@ -21,7 +21,7 @@ Benchmark Datasets
 | **warpPIE10P** | Images | Subset of PIE (Pose, Illumination, and Expression) face images from 10 people, warping applied (multi-view grayscale) | 210 | 2,420 | 10 | Li, J., Wang, K., et al. | You et al. (2023) | KM + varied UFS | KM + NNSE | ACC=58.1, NMI=52.2 | <https://jundongl.github.io/scikit-feature/datasets.html> |
 | ISOLET6 | Speech | Subset (6 classes) of the ISOLET dataset, spoken letter recognition, high-dimensional features | 1,440 | 617 | 6 | Blake & Merz (1998) | Fern & Lin (2008) | KM, SpeCl, RP, FW, CAS, JC, CH, CSPA | CSPA + CAS | NMI=0.851 |  |
 
-Datasets in bold are included in diceRplus.
+Datasets in bold are included in `diceRplus`.
 
 † Methods:  
 - AffPr: Affinity propagation  
