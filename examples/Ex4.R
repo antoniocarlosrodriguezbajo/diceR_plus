@@ -1,3 +1,5 @@
+# Anderlucci's meat
+
 library(RPEClust)
 library(future.apply)
 library(mclust)
