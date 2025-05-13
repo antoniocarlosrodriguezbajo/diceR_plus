@@ -21,14 +21,42 @@ dat <-  meats[, !names(meats) %in% "class"]
 
 ref.cl <- as.integer(meats$class)
 
-# setVariable(matlab, X = Meat$x)
-setVariable(matlab, X = dat)
+setVariable(matlab, X = Meat$x)
+#setVariable(matlab, X = dat)
 
 evaluate(matlab, "whos")
 
-evaluate(matlab, "rng(42);")
-evaluate(matlab, "Result = Auto_UFSTool(X, 'RUFS');")
-result <- getVariable(matlab, "Result")
+UFS_Methods <- list(
+  "CFS" = FALSE,
+  "Laplacian" = TRUE,
+  "DGUFS" = TRUE,
+  "UFSOL" = TRUE,
+  "SPEC" = TRUE,
+  "RUFS" = TRUE
+)
+
+UFS_Methods_Slow <- list(
+  "MCFS" = TRUE,
+  "LLCFS" = TRUE,
+  "FSASL" = TRUE,
+  "SOCFS" = TRUE
+)
+
+for (UFS_Method in names(UFS_Methods))  {
+  print(UFS_Method)
+  send_input <- UFS_Methods[[UFS_Method]]
+  cmd <- sprintf('Result = Auto_UFSTool(X, "%s");', UFS_Method)
+  evaluate(matlab, "rng(42);")
+  # Execute AutoHotkey to send option 1 keystroke (default values) to MATLAB console
+  if (send_input) {
+    system('cmd /c start /B "C:/Program Files/AutoHotkey/v2/AutoHotkey.exe" "C:/Users/anton/OneDrive/Documentos/send_input.ahk"')
+  }
+  # Ahora ejecutar la función en MATLAB
+  evaluate(matlab, cmd)
+  result <- getVariable(matlab, "Result")
+  print(str(result))
+}
+
 # Extraer el vector numérico
 ranking <- result$Result[[1]]
 # Aplana el array:
@@ -40,11 +68,34 @@ head(ranking)
 # O imprimir todo el ranking:
 print(ranking)
 
+
+
 close(matlab)
 
 
 ######
 
+
+# Iniciar servidores en distintos puertos
+Matlab$startServer(port = 9999)
+Matlab$startServer(port = 10000)
+
+# Crear objetos MATLAB conectados a cada servidor
+matlab1 <- Matlab(port = 9999)
+matlab2 <- Matlab(port = 10000)
+
+# Conectar ambos objetos a los servidores
+open(matlab1)
+open(matlab2)
+
+# Ver información de cada conexión
+print(matlab1)
+print(matlab2)
+
+evaluate(matlab1, "set(groot, 'Name', 'MATLAB - Servidor 9999');")
+
+close(matlab1)
+close(matlab2)
 
 
 
@@ -105,3 +156,7 @@ data <- getVariable(matlab, c("A", "B"))
 cat("Received variables:\n")
 str(data)
 close(matlab)
+
+evaluate(matlab, "disp('1');") # Enviar '1' a la consola de MATLAB
+
+
