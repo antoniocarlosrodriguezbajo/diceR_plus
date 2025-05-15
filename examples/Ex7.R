@@ -13,34 +13,31 @@ if (!isOpen)
   print("MATLAB server is not running: waited 30 seconds.")
 print(matlab)
 
-data(meats)
-
-str(meats$class)
-
-dat <-  meats[, !names(meats) %in% "class"]
-
-ref.cl <- as.integer(meats$class)
-
 setVariable(matlab, X = Meat$x)
-#setVariable(matlab, X = dat)
 
 evaluate(matlab, "whos")
 
 UFS_Methods <- list(
+  "InfFS" = FALSE,
   "CFS" = FALSE,
   "Laplacian" = TRUE,
   "DGUFS" = TRUE,
   "UFSOL" = TRUE,
   "SPEC" = TRUE,
-  "RUFS" = TRUE
+  "UDFS" = TRUE,
+  "RUFS"  = TRUE
 )
 
 UFS_Methods_Slow <- list(
   "MCFS" = TRUE,
   "LLCFS" = TRUE,
   "FSASL" = TRUE,
-  "SOCFS" = TRUE
+  "SOCFS" = TRUE,
+  "SOGFS" = TRUE,
+  "MCFS" = TRUE
 )
+
+UFS_Results <- list()
 
 for (UFS_Method in names(UFS_Methods))  {
   print(UFS_Method)
@@ -54,8 +51,10 @@ for (UFS_Method in names(UFS_Methods))  {
   # Ahora ejecutar la función en MATLAB
   evaluate(matlab, cmd)
   result <- getVariable(matlab, "Result")
-  print(str(result))
+  UFS_Results[[UFS_Method]] <- result
 }
+
+str(UFS_Results)
 
 # Extraer el vector numérico
 ranking <- result$Result[[1]]
@@ -159,4 +158,10 @@ close(matlab)
 
 evaluate(matlab, "disp('1');") # Enviar '1' a la consola de MATLAB
 
+data(meats)
 
+str(meats$class)
+
+dat <-  meats[, !names(meats) %in% "class"]
+
+ref.cl <- as.integer(meats$class)
