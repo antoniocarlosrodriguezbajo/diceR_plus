@@ -6,6 +6,7 @@
 \usage{
 experiment_logger(
   description,
+  dataset,
   ensemble_method,
   ensemble_method_params,
   UFS_method,
@@ -20,6 +21,8 @@ experiment_logger(
 }
 \arguments{
 \item{description}{Character, description of experiment.}
+
+\item{dataset}{Character, name of the dataset.}
 
 \item{ensemble_method}{Character, ensemble clustering method.}
 

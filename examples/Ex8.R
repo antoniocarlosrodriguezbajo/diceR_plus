@@ -72,7 +72,7 @@ RPGMMClu<-function(x, true.cl=NULL, g, d = NULL, c = 10, B = 1000, B.star = 100,
 }
 
 # Parallel implementation of RPGMMClu
-RPGMMClu_parallel <- function(x, true.cl=NULL, g, d = NULL, c = 10, B = 1000, B.star = 100, modelNames = NULL, diagonal = FALSE, ensmethod="DWH", seed = 101, verb = FALSE){
+RPGMMClu_parallel2 <- function(x, true.cl=NULL, g, d = NULL, c = 10, B = 1000, B.star = 100, modelNames = NULL, diagonal = FALSE, ensmethod="DWH", seed = 101, verb = FALSE){
 
   options(future.globals.maxSize = 1 * 1024^3)  # 1 GB
 
@@ -199,7 +199,41 @@ B.star=10
 
 # Original vs Parallel
 # Run RPGMMClu baseline
-system.time(out.clu_p_baseline <- RPGMMClu(Meat$x, Meat$y, g=5, B=B, B.star=B.star, verb=TRUE))
+execution_time <- system.time(out.clu_p_baseline <- RPGMMClu(Meat$x,
+                                                             Meat$y,
+                                                             g=5,
+                                                             B=B,
+                                                             B.star=B.star,
+                                                             verb=TRUE))["elapsed"]
+
+print(execution_time)
+str(out.clu_p_baseline)
+
+
+exp_data <- experiment_logger(
+  description = "Baseline clustering with RPGMMClu",
+  dataset = "Meat",
+  ensemble_method = "RPGMMClu",
+  ensemble_method_params = list(g = 5, B = 100, B.star = 10),
+  UFS_method = "N/A",
+  num_features = NA,
+  features = list(),
+  dim_reduction_method = "N/A",
+  dim_reduction_method_params = list(),
+  execution_time = as.numeric(execution_time),
+  internal_metrics = list(),
+  external_metrics = list(ensemble_ari = out.clu_p_baseline$ensemble$ari)
+)
+
+
+save_experiment(exp_data)
+
+loaded_experiments <- load_experiments()
+print(loaded_experiments)  # Ver los experimentos almacenados
+
+
+
+
 # Run RPGMMClu baseline in parallel (80% of available cores)
 system.time(out.clu_p_baseline_parallel <- RPGMMClu_parallel(Meat$x, Meat$y, g=5, B=B, B.star=B.star, verb=TRUE))
 

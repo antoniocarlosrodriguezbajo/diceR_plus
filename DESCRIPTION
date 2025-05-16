@@ -29,6 +29,8 @@ Imports:
     clv,
     clValid,
     dplyr (>= 0.7.5),
+    future,
+    future.apply,
     ggplot2,
     grDevices,
     infotheo,
