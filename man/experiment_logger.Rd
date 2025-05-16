@@ -15,6 +15,7 @@ experiment_logger(
   dim_reduction_method,
   dim_reduction_method_params,
   execution_time,
+  labels_clustering,
   internal_metrics,
   external_metrics
 )
@@ -39,6 +40,8 @@ experiment_logger(
 \item{dim_reduction_method_params}{List, parameters of the dimensionality reduction method.}
 
 \item{execution_time}{Numeric, execution time in seconds.}
+
+\item{labels_clustering}{List, ensemble clustering labels.}
 
 \item{internal_metrics}{List, internal evaluation metrics.}
 

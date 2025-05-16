@@ -29,6 +29,7 @@ generate_experiment_id <- function(file = "experiments/experiment_results.rds") 
 #' @param dim_reduction_method Character, dimensionality reduction method.
 #' @param dim_reduction_method_params List, parameters of the dimensionality reduction method.
 #' @param execution_time Numeric, execution time in seconds.
+#' @param labels_clustering List, ensemble clustering labels.
 #' @param internal_metrics List, internal evaluation metrics.
 #' @param external_metrics List, external evaluation metrics.
 #'
@@ -38,23 +39,24 @@ experiment_logger <- function(description, dataset,
                               ensemble_method, ensemble_method_params,
                               UFS_method, num_features, features,
                               dim_reduction_method, dim_reduction_method_params,
-                              execution_time, internal_metrics, external_metrics) {
-  data.frame(
+                              execution_time, labels_clustering,
+                              internal_metrics, external_metrics) {
+  tibble(
     experiment_id = generate_experiment_id(),
     description = description,
     dataset = dataset,
     ensemble_method = ensemble_method,
-    ensemble_method_params = list(ensemble_method_params),
+    ensemble_method_params = ensemble_method_params,
     UFS_method = UFS_method,
     num_features = num_features,
     features = features,
     dim_reduction_method = dim_reduction_method,
-    dim_reduction_method_params = list(dim_reduction_method_params),
+    dim_reduction_method_params = dim_reduction_method_params,
     execution_time = execution_time,
     timestamp = Sys.time(),
-    internal_metrics = list(internal_metrics),
-    external_metrics = list(external_metrics),
-    stringsAsFactors = FALSE
+    labels_clustering = labels_clustering,
+    internal_metrics = internal_metrics,
+    external_metrics = external_metrics
   )
 }
 

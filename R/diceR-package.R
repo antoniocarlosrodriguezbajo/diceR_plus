@@ -7,6 +7,8 @@
 #' @import clue
 #' @import future.apply
 #' @import future
+#' @import tibble
+#' @import R.matlab
 #' @importFrom clusteval sim_normal
 #' @importFrom magrittr %>%
 #' @importFrom purrr %||%
