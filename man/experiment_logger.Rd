@@ -8,16 +8,17 @@ experiment_logger(
   description,
   dataset,
   ensemble_method,
-  ensemble_method_params,
-  UFS_method,
-  num_features,
-  features,
-  dim_reduction_method,
-  dim_reduction_method_params,
-  execution_time,
+  ensemble_method_params = list(NA),
+  UFS_method = "N/A",
+  UFS_method_params = list(NA),
+  num_features = NA,
+  features = NA,
+  dim_reduction_method = "N/A",
+  dim_reduction_method_params = list(NA),
+  execution_time = NA,
   labels_clustering,
-  internal_metrics,
-  external_metrics
+  internal_metrics = list(NA),
+  external_metrics = list(NA)
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ experiment_logger(
 
 \item{UFS_method}{Character, unsupervised feature selection method.}
 
+\item{UFS_method_params}{List, parameters of the unsupervised feature selection method.}
+
 \item{num_features}{Integer, number of features selected.}
 
 \item{features}{List, features selected.}
@@ -41,13 +44,11 @@ experiment_logger(
 
 \item{execution_time}{Numeric, execution time in seconds.}
 
-\item{labels_clustering}{List, ensemble clustering labels.}
+\item{labels_clustering}{ensemble clustering labels.}
 
 \item{internal_metrics}{List, internal evaluation metrics.}
 
 \item{external_metrics}{List, external evaluation metrics.}
-
-\item{UFS_method_params}{List, parameters of the unsupervised feature selection method.}
 }
 \value{
 Dataframe containing the experiment results.
