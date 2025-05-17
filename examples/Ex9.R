@@ -1,4 +1,4 @@
-# Anderlucci's meat with UFS integrated into the package
+# Anderlucci's meat with UFS integrated into the package and internal metrics
 # Anderlucci's: https://rdrr.io/cran/RPEClust/f/
 # UFS: https://github.com/farhadabedinzadeh/AutoUFSTool
 
@@ -22,49 +22,87 @@ calculate_internal_metrics <- function(data,cluster_labels) {
   return(metrics_list)
 }
 
-UFS_Methods <- list(
-  "InfFS" = FALSE,
-  "CFS" = FALSE,
-  "Laplacian" = TRUE,
-  "DGUFS" = TRUE,
-  "UFSOL" = TRUE,
-  "SPEC" = TRUE,
-  "UDFS" = TRUE,
-  "RUFS"  = TRUE
-)
-
+# Meat dataset
 data(Meat)
 
-UFS_Results <- runUFS(Meat$x, UFS_Methods)
+############################################################
+# Experiment in Anderlucci's paper (original implementation)
+############################################################
+B <- 1000
+B.star=100
 
-B <- 100
-B.star=10
+# Run RPGMMClu
+execution_time <- system.time(out.clu_baseline <- RPGMMClu(Meat$x,
+                                                           Meat$y,
+                                                           g=5,
+                                                           B=B,
+                                                           B.star=B.star,
+                                                           verb=TRUE))["elapsed"]
 
-# Original vs Parallel
-# Run RPGMMClu baseline
-execution_time <- system.time(out.clu_p_baseline <- RPGMMClu(Meat$x,
-                                                             Meat$y,
-                                                             g=5,
-                                                             B=B,
-                                                             B.star=B.star,
-                                                             verb=TRUE))["elapsed"]
-
-
-internat_metrics <- calculate_internal_metrics(Meat$x,
+# Calculate internal metrics
+internal_metrics <- calculate_internal_metrics(Meat$x,
                                                out.clu_p_baseline$ensemble$label.vec)
-
+# Log the experiment
 exp_data <- experiment_logger(
-  description = "Baseline clustering with RPGMMClu",
+  description = "Clustering with RPGMMClu - Experiment in Anderlucci's paper",
   dataset = "Meat",
   ensemble_method = "RPGMMClu",
   ensemble_method_params = list(g = 5, B = 100, B.star = 10),
   execution_time = as.numeric(execution_time),
   labels_clustering = out.clu_p_baseline$ensemble$label.vec,
-  internal_metrics = internat_metrics,
+  internal_metrics = internal_metrics,
   external_metrics = list(ensemble_ari = out.clu_p_baseline$ensemble$ari[[1]])
 )
-
 save_experiment(exp_data)
 
+############################################################
+# Experiment in Anderlucci's paper (parallel implementation)
+############################################################
+
+
+
 experiments_data <- load_experiments()
+
+
+
+
+UFS_Methods <- list(
+  "InfFS" = FALSE,
+  "Laplacian" = TRUE,
+  "MCFS" = TRUE,
+  "LLCFS" = TRUE,
+  "CFS" = FALSE,
+  "FSASL" = TRUE,
+  "DGUFS" = TRUE,
+  "UFSOL" = TRUE,
+  "SPEC" = TRUE,
+  # "SOCFS" = TRUE, # Won't work
+  "SOGFS" = TRUE,
+  "UDFS" = TRUE,
+  "SRCFS" = TRUE,
+  "FMIUFS" = TRUE,
+  "UAR_HKCMI" = TRUE,
+  "RNE" = TRUE,
+  # "FRUAFR" = TRUE, # Won't work
+  "U2FS" = TRUE,
+  "RUFS" = TRUE,
+  "NDFS" = TRUE,
+  "EGCFS" = TRUE,
+  "CNAFS" = TRUE,
+  "Inf-FS2020" = TRUE
+)
+
+UFS_Results <- runUFS(Meat$x, UFS_Methods)
+save(UFS_Results, file = "experiments/UFS_Meat.RData")
+
+load("experiments/UFS_Meat.RData")
+
+N <- 1000
+UFS_Results$Results$"Inf-FS2020"$Result[[1]][1:N]
+UFS_Results$ExecutionTimes$"Inf-FS2020"
+
+UFS_Results$Results$Laplacian$Result[[1]][1:N]
+UFS_Results$ExecutionTimes$Laplacian
+
+
 

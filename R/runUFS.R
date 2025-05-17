@@ -57,6 +57,7 @@ runUFS <- function(data, UFS_Methods,
   evaluate(matlab, "whos")
 
   UFS_Results <- list()
+  UFS_Times <- list()
 
   # Loop through methods and execute them in MATLAB
   for (UFS_Method in names(UFS_Methods)) {
@@ -65,7 +66,11 @@ runUFS <- function(data, UFS_Methods,
     cmd <- sprintf('Result = Auto_UFSTool(X, "%s");', UFS_Method)
 
     # Set random seed in MATLAB
+    evaluate(matlab, "rng('default');")
     evaluate(matlab, "rng(42);")
+
+    # Measure execution time
+    start_time <- Sys.time()
 
     # Execute AutoHotkey script if required
     if (send_input && !is.null(ahk_executable_path) && !is.null(ahk_script_path)) {
@@ -75,12 +80,19 @@ runUFS <- function(data, UFS_Methods,
     # Run the feature selection method in MATLAB
     evaluate(matlab, cmd)
     result <- getVariable(matlab, "Result")
+
+    # Measure end time and calculate duration
+    end_time <- Sys.time()
+    execution_time <- as.numeric(difftime(end_time, start_time, units = "secs"))
+
     UFS_Results[[UFS_Method]] <- result
+    UFS_Times[[UFS_Method]] <- execution_time
   }
 
   # Close MATLAB connection
   close(matlab)
 
-  return(UFS_Results)
+  return(list(Results = UFS_Results, ExecutionTimes = UFS_Times))
 }
+
 
