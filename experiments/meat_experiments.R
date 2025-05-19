@@ -2,6 +2,9 @@
 # Anderlucci's: https://rdrr.io/cran/RPEClust/f/
 # UFS: https://github.com/farhadabedinzadeh/AutoUFSTool
 
+library(tidyr)
+library(ggplot2)
+
 # Calcute internal_metrics based on consensus_evaluate of diceR
 calculate_internal_metrics <- function(data,cluster_labels) {
   num_labels <- length(cluster_labels)
@@ -20,6 +23,48 @@ calculate_internal_metrics <- function(data,cluster_labels) {
   metrics_df <- result_evaluation$ii[[1]]
   metrics_list <- lapply(metrics_df[1, -1], function(x) unname(x))
   return(metrics_list)
+}
+
+plot_metrics_vs_num_features <- function (data, internal_metrics, title, xAxis_text, file_save) {
+  # Define which metrics are better when higher (+) and which are better when lower (-)
+  positive_metrics <- c("calinski_harabasz", "dunn", "pbm", "tau", "gamma", "silhouette", "ensemble_ari")
+  negative_metrics <- c("c_index", "davies_bouldin", "mcclain_rao", "g_plus", "sd_dis", "ray_turi", "Compactness", "Connectivity")
+
+  # Convert the list of metrics into columns in a dataframe
+  if (internal_metrics) {
+    metrics_df <- do.call(rbind, lapply(experiments_infFS$internal_metrics, as.data.frame))
+  } else {
+    metrics_df <- do.call(rbind, lapply(experiments_infFS$external_metrics, as.data.frame))
+  }
+
+  # Add the 'num_features' column
+  metrics_df$num_features <- experiments_infFS$num_features
+
+  # Convert dataframe to long format for easier plotting
+  long_metrics <- pivot_longer(metrics_df, cols = -num_features, names_to = "metric", values_to = "value")
+
+  # Remove the 's_dbw' metric from the dataframe
+  long_metrics <- long_metrics[long_metrics$metric != "s_dbw", ]
+
+  # Assign labels based on the metric type
+  long_metrics$metric_label <- ifelse(long_metrics$metric %in% positive_metrics,
+                                      paste0(long_metrics$metric, " (+)"),
+                                      ifelse(long_metrics$metric %in% negative_metrics,
+                                             paste0(long_metrics$metric, " (-)"),
+                                             long_metrics$metric))
+
+  # Generate plots with updated labels
+  plot <- ggplot(long_metrics, aes(x = num_features, y = value)) +
+    geom_line() +
+    facet_wrap(~ metric_label, scales = "free_y") +
+    theme_minimal() +
+    labs(title = title,
+         x = xAxis_text,
+         y = "Metric value")
+
+  ggsave(paste0("experiments/", file_save), plot = plot,
+         width = 8, height = 6, device = "svg")
+  return(plot)
 }
 
 # Meat dataset
@@ -125,7 +170,7 @@ load("experiments/UFS_Meat.RData")
 B <- 500
 B.star <- 50
 
-# Fix InfFS
+# Fixed InfFS
 method <- names(UFS_Results$Results)[1]
 print(method)
 
@@ -165,12 +210,15 @@ for (N in seq(25, ncol(Meat$x), by = 25)) {
 }
 
 
-## Analysis
+## Analysis (No UFS and infFS)
 
 experiments_data <- load_experiments()
 
+experiments_data <- experiments_data[experiments_data$experiment_id < 106,]
+
 # Define which metrics should be minimized
-metrics_to_minimize <- c("davies_bouldin", "mcclain_rao", "ray_turi", "s_dbw", "Connectivity")
+metrics_to_minimize <- c("c_index", "davies_bouldin", "mcclain_rao", "g_plus",
+                         "s_dbw", "ray_turi", "Compactness", "Connectivity")
 
 # Extract the best internal metrics based on whether they should be maximized or minimized
 best_metrics <- lapply(names(experiments_data$internal_metrics[[1]]), function(metric) {
@@ -224,81 +272,28 @@ filter_index <- sapply(experiments_infFS$ensemble_method_params, function(x) {
 
 experiments_infFS <- experiments_infFS[filter_index, ]
 
-library(ggplot2)
-library(tidyr)
+plotInfFS_internal <- plot_metrics_vs_num_features(experiments_infFS,
+                                                   internal = TRUE,
+                                                   "Number of selected features (InfFS) vs internal metrics",
+                                                   "Number of features (meat dataset)",
+                                                   "infFS_meat_internal.svg")
+print(plotInfFS_internal)
 
-# Convert the list of metrics into columns in a dataframe
-metrics_df <- do.call(rbind, lapply(experiments_infFS$internal_metrics, as.data.frame))
-
-# Add the 'num_features' column
-metrics_df$num_features <- experiments_infFS$num_features
-
-# Convert dataframe to long format for easier plotting
-long_metrics <- pivot_longer(metrics_df, cols = -num_features, names_to = "metric", values_to = "value")
-
-# Remove the 's_dbw' metric from the dataframe
-long_metrics <- long_metrics[long_metrics$metric != "s_dbw", ]
-
-# Define which metrics are better when higher (+) and which are better when lower (-)
-positive_metrics <- c("calinski_harabasz", "dunn", "pbm", "tau", "gamma", "g_plus", "silhouette")
-negative_metrics <- c("c_index", "davies_bouldin", "mcclain_rao", "sd_dis", "ray_turi", "Compactness", "Connectivity")
-
-# Assign labels based on the metric type
-long_metrics$metric_label <- ifelse(long_metrics$metric %in% positive_metrics,
-                                    paste0(long_metrics$metric, " (+)"),
-                                    ifelse(long_metrics$metric %in% negative_metrics,
-                                           paste0(long_metrics$metric, " (-)"),
-                                           long_metrics$metric))
-
-# Generate plots with updated labels
-ggplot(long_metrics, aes(x = num_features, y = value)) +
-  geom_line() +
-  facet_wrap(~ metric_label, scales = "free_y") +
-  theme_minimal() +
-  labs(title = "Relationship between num_features and internal metrics",
-       x = "Number of features",
-       y = "Metric value")
-
-
-ggsave("experiments/plot01.svg", width = 8, height = 6, device = "svg")
-
-# Convert the list of metrics into columns in a dataframe
-metrics_df <- do.call(rbind, lapply(experiments_infFS$external_metrics, as.data.frame))
-
-# Add the 'num_features' column
-metrics_df$num_features <- experiments_infFS$num_features
-
-# Convert dataframe to long format for easier plotting
-long_metrics <- pivot_longer(metrics_df, cols = -num_features, names_to = "metric", values_to = "value")
-
-# Remove the 's_dbw' metric from the dataframe
-long_metrics <- long_metrics[long_metrics$metric != "s_dbw", ]
-
-# Define which metrics are better when higher (+) and which are better when lower (-)
-positive_metrics <- c("calinski_harabasz", "dunn", "pbm", "tau", "gamma", "g_plus", "silhouette")
-negative_metrics <- c("c_index", "davies_bouldin", "mcclain_rao", "sd_dis", "ray_turi", "Compactness", "Connectivity")
-
-# Assign labels based on the metric type
-long_metrics$metric_label <- ifelse(long_metrics$metric %in% positive_metrics,
-                                    paste0(long_metrics$metric, " (+)"),
-                                    ifelse(long_metrics$metric %in% negative_metrics,
-                                           paste0(long_metrics$metric, " (-)"),
-                                           long_metrics$metric))
-
-ggplot(long_metrics, aes(x = num_features, y = value)) +
-  geom_line() +
+plotInfFS_external <- plot_metrics_vs_num_features(experiments_infFS,
+                                                   internal = FALSE,
+                                                   "Number of selected features (InfFS) vs external metrics",
+                                                   "Number of features (meat dataset)",
+                                                   "infFS_meat_external.svg")
+# Add baseline
+plotInfFS_external <- plotInfFS_external +
   geom_hline(yintercept = 0.32, linetype = "dashed", color = "red") +  # Línea de referencia
   annotate("text", x = min(long_metrics$num_features), y = 0.32,
            label = "Baseline = 0.32", hjust = 0, vjust = -0.5, color = "red", size = 3) +  # Texto más pequeño
-  facet_wrap(~ metric_label, scales = "free_y") +
-  theme_minimal() +
-  labs(title = "Number of selected features (InfFS) vs external metrics",
-       x = "Number of selected features",
-       y = "Metric value") +
-  theme(plot.title = element_text(hjust = 0.5))
+  facet_wrap(~ metric_label, scales = "free_y")
 
-ggsave("experiments/plot02.svg", width = 8, height = 6, device = "svg")
-
+print(plotInfFS_external)
+ggsave("experiments/infFS_meat_external.svg", plot = plotInfFS_external,
+       width = 8, height = 6, device = "svg")
 
 
 ############################################################
