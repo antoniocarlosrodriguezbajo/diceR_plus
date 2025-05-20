@@ -63,7 +63,7 @@ plot_metrics_vs_num_features <- function (data, internal_metrics, title, xAxis_t
          y = "Metric value")
 
   ggsave(paste0("experiments/", file_save), plot = plot,
-         width = 8, height = 6, device = "svg")
+         width = 8, height = 6, device = "eps")
   return(plot)
 }
 
@@ -276,14 +276,14 @@ plotInfFS_internal <- plot_metrics_vs_num_features(experiments_infFS,
                                                    internal = TRUE,
                                                    "Number of selected features (InfFS) vs internal metrics",
                                                    "Number of features (meat dataset)",
-                                                   "infFS_meat_internal.svg")
+                                                   "infFS_meat_internal.eps")
 print(plotInfFS_internal)
 
 plotInfFS_external <- plot_metrics_vs_num_features(experiments_infFS,
                                                    internal = FALSE,
                                                    "Number of selected features (InfFS) vs external metrics",
                                                    "Number of features (meat dataset)",
-                                                   "infFS_meat_external.svg")
+                                                   "infFS_meat_external.eps")
 # Add baseline
 plotInfFS_external <- plotInfFS_external +
   geom_hline(yintercept = 0.32, linetype = "dashed", color = "red") +  # Línea de referencia
@@ -292,8 +292,8 @@ plotInfFS_external <- plotInfFS_external +
   facet_wrap(~ metric_label, scales = "free_y")
 
 print(plotInfFS_external)
-ggsave("experiments/infFS_meat_external.svg", plot = plotInfFS_external,
-       width = 8, height = 6, device = "svg")
+ggsave("experiments/infFS_meat_external.eps", plot = plotInfFS_external,
+       width = 8, height = 6, device = "eps")
 
 
 ############################################################
@@ -386,7 +386,7 @@ ranking_df <- ranking_df[order(ranking_df$best_metric_count, decreasing = TRUE),
 # Add ensemble_method_params and num_features based on row index
 ranking_df$ensemble_method_params <- experiments_data$ensemble_method_params[as.numeric(as.character(ranking_df$row))]
 ranking_df$num_features <- experiments_data$num_features[as.numeric(as.character(ranking_df$row))]
-
+ranking_df$ensemble_ari <- sapply(ranking_df$row, function(row) experiments_data$external_metrics[[row]]$ensemble_ari)
 print(ranking_df)
 
 ############################
