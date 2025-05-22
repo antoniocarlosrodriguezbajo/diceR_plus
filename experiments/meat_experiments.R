@@ -278,9 +278,11 @@ for (N in seq(25, ncol(Meat$x), by = 25)) {
 
 experiments_data_all <- load_experiments()
 
+# B=500, B*=50
 filter_500 <- experiments_data_all$experiment_id >= 64 &
               experiments_data_all$experiment_id <= 105
 
+# B=1000, B*=100
 filter_1000 <- experiments_data_all$experiment_id >= 22 &
   experiments_data_all$experiment_id <= 63
 
@@ -301,33 +303,38 @@ best_metrics <- lapply(names(experiments_data$internal_metrics[[1]]), function(m
     best_row <- which.max(values)  # Otherwise, find the maximum
   }
 
-  list(metric = metric, row = best_row, best_value = values[best_row])
+  experiment_id <- experiments_data$experiment_id[best_row]
+
+  list(metric = metric, experiment_id = experiment_id, best_value = values[best_row])
 })
 
 # Convert to a data frame for better visualization
 df_results <- do.call(rbind, lapply(best_metrics, as.data.frame))
 
 # Extract additional columns from experiments_data
-df_results$ensemble_method_params <- sapply(df_results$row, function(row) experiments_data$ensemble_method_params[row])
-df_results$num_features <- sapply(df_results$row, function(row) experiments_data$num_features[row])
+df_results$ensemble_method_params <- sapply(df_results$experiment_id, function(exp_id) experiments_data$ensemble_method_params[experiments_data$experiment_id == exp_id])
+df_results$num_features <- sapply(df_results$experiment_id, function(exp_id) experiments_data$num_features[experiments_data$experiment_id == exp_id])
+
 df_results <- df_results[order(df_results$metric), ]
 print(df_results)
 
 
-# Ranking
-# Count occurrences of best rows across all metrics
-best_row_counts <- table(sapply(best_metrics, function(x) x$row))
+# Contar ocurrencias de los mejores experimentos en todas las métricas
+best_experiment_counts <- table(sapply(best_metrics, function(x) x$experiment_id))
 
-# Convert to data frame and sort by count (descending)
-ranking_df <- as.data.frame(best_row_counts)
-colnames(ranking_df) <- c("row", "best_metric_count")
+# Convertir a un data frame y ordenar por frecuencia descendente
+ranking_df <- as.data.frame(best_experiment_counts)
+colnames(ranking_df) <- c("experiment_id", "best_metric_count")
 ranking_df <- ranking_df[order(ranking_df$best_metric_count, decreasing = TRUE), ]
 
-# Add ensemble_method_params and num_features based on row index
-ranking_df$ensemble_method_params <- experiments_data$ensemble_method_params[as.numeric(as.character(ranking_df$row))]
-ranking_df$num_features <- experiments_data$num_features[as.numeric(as.character(ranking_df$row))]
+# Extraer columnas adicionales basadas en experiment_id
+ranking_df$ensemble_method_params <- sapply(ranking_df$experiment_id, function(exp_id) experiments_data$ensemble_method_params[experiments_data$experiment_id == exp_id])
+ranking_df$num_features <- sapply(ranking_df$experiment_id, function(exp_id) experiments_data$num_features[experiments_data$experiment_id == exp_id])
+ranking_df$ensemble_ari <- sapply(ranking_df$experiment_id, function(exp_id) experiments_data$external_metrics[[which(experiments_data$experiment_id == exp_id)]]$ensemble_ari)
 
+# Imprimir el ranking actualizado
 print(ranking_df)
+
 
 ## Experiment 66 holds the top position
 
