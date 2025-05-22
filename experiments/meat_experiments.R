@@ -4,6 +4,8 @@
 
 library(tidyr)
 library(ggplot2)
+library(dplyr)
+
 
 # Calcute internal_metrics based on consensus_evaluate of diceR
 calculate_internal_metrics <- function(data,cluster_labels) {
@@ -60,10 +62,72 @@ plot_metrics_vs_num_features <- function (data, internal_metrics, title, xAxis_t
     theme_minimal() +
     labs(title = title,
          x = xAxis_text,
-         y = "Metric value")
+         y = "Metric value") +
+    theme(plot.title = element_text(hjust = 0.5))
 
   ggsave(paste0("experiments/", file_save), plot = plot,
          width = 8, height = 6, device = "eps")
+  return(plot)
+}
+
+plot_metrics_vs_num_features2 <- function(data1, legend_data1,
+                                          data2, legend_data2,
+                                          legend_title,
+                                          internal_metrics,
+                                          title, xAxis_text, file_save) {
+  # Define which metrics are better when higher (+) and which are better when lower (-)
+  positive_metrics <- c("calinski_harabasz", "dunn", "pbm", "tau", "gamma", "silhouette", "ensemble_ari")
+  negative_metrics <- c("c_index", "davies_bouldin", "mcclain_rao", "g_plus", "sd_dis", "ray_turi", "Compactness", "Connectivity")
+
+  # Function to extract metrics from data and add source label
+  process_data <- function(data, source_name) {
+    metrics_df <- if (internal_metrics) {
+      do.call(rbind, lapply(data$internal_metrics, as.data.frame))
+    } else {
+      do.call(rbind, lapply(data$external_metrics, as.data.frame))
+    }
+
+    metrics_df$num_features <- data$num_features
+    metrics_df$source <- source_name  # Label for differentiation
+    return(metrics_df)
+  }
+
+  # Process both datasets with their corresponding legend labels
+  metrics_df1 <- process_data(data1, legend_data1)
+  metrics_df2 <- process_data(data2, legend_data2)
+
+  # Combine datasets
+  combined_metrics <- bind_rows(metrics_df1, metrics_df2)
+
+  # Convert to long format
+  long_metrics <- pivot_longer(combined_metrics, cols = -c(num_features, source), names_to = "metric", values_to = "value")
+
+  # Remove the 's_dbw' metric
+  long_metrics <- long_metrics[long_metrics$metric != "s_dbw", ]
+
+  # Assign metric labels
+  long_metrics$metric_label <- ifelse(long_metrics$metric %in% positive_metrics,
+                                      paste0(long_metrics$metric, " (+)"),
+                                      ifelse(long_metrics$metric %in% negative_metrics,
+                                             paste0(long_metrics$metric, " (-)"),
+                                             long_metrics$metric))
+
+  # Generate plot with colors for each dataset and custom legend title
+  plot <- ggplot(long_metrics, aes(x = num_features, y = value, color = source)) +
+    geom_line() +
+    facet_wrap(~ metric_label, scales = "free_y") +
+    theme_minimal() +
+    labs(title = title,
+         x = xAxis_text,
+         y = "Metric value",
+         color = legend_title) +  # Custom legend title
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.position = "bottom" )
+
+  # Save plot
+  ggsave(paste0("experiments/", file_save), plot = plot,
+         width = 8, height = 6, device = "eps")
+
   return(plot)
 }
 
@@ -210,11 +274,17 @@ for (N in seq(25, ncol(Meat$x), by = 25)) {
 }
 
 
-## Analysis (No UFS and infFS)
+## Analysis (infFS)
 
-experiments_data <- load_experiments()
+experiments_data_all <- load_experiments()
 
-experiments_data <- experiments_data[experiments_data$experiment_id < 106,]
+filter_500 <- experiments_data_all$experiment_id >= 64 &
+              experiments_data_all$experiment_id <= 105
+
+filter_1000 <- experiments_data_all$experiment_id >= 22 &
+  experiments_data_all$experiment_id <= 63
+
+experiments_data <- experiments_data_all[filter_500 | filter_1000,]
 
 # Define which metrics should be minimized
 metrics_to_minimize <- c("c_index", "davies_bouldin", "mcclain_rao", "g_plus",
@@ -240,7 +310,7 @@ df_results <- do.call(rbind, lapply(best_metrics, as.data.frame))
 # Extract additional columns from experiments_data
 df_results$ensemble_method_params <- sapply(df_results$row, function(row) experiments_data$ensemble_method_params[row])
 df_results$num_features <- sapply(df_results$row, function(row) experiments_data$num_features[row])
-
+df_results <- df_results[order(df_results$metric), ]
 print(df_results)
 
 
@@ -263,37 +333,38 @@ print(ranking_df)
 
 # Graphics
 
-experiments_infFS <- experiments_data[experiments_data$UFS_method == "InfFS", ]
-
-# Filter rows where 'ensemble_method_params' contains B = 500
-filter_index <- sapply(experiments_infFS$ensemble_method_params, function(x) {
-  is.list(x) && "B" %in% names(x) && x[["B"]] == 500
-})
-
-experiments_infFS <- experiments_infFS[filter_index, ]
-
-plotInfFS_internal <- plot_metrics_vs_num_features(experiments_infFS,
+plotInfFS_internal <- plot_metrics_vs_num_features2(experiments_data_all[filter_500,], "B=500,B*=50",
+                                                    experiments_data_all[filter_1000,], "B=1000,B*=100",
+                                                    "RPEClu params",
                                                    internal = TRUE,
                                                    "Number of selected features (InfFS) vs internal metrics",
                                                    "Number of features (meat dataset)",
                                                    "infFS_meat_internal.eps")
 print(plotInfFS_internal)
 
-plotInfFS_external <- plot_metrics_vs_num_features(experiments_infFS,
+
+plotInfFS_external <- plot_metrics_vs_num_features2(experiments_data_all[filter_500,], "B=500,B*=50",
+                                                    experiments_data_all[filter_1000,], "B=1000,B*=100",
                                                    internal = FALSE,
-                                                   "Number of selected features (InfFS) vs external metrics",
+                                                   "RPEClu params",
+                                                   "Number of selected features (infFS) vs ARI",
                                                    "Number of features (meat dataset)",
                                                    "infFS_meat_external.eps")
+print(plotInfFS_external)
+
 # Add baseline
 plotInfFS_external <- plotInfFS_external +
-  geom_hline(yintercept = 0.32, linetype = "dashed", color = "red") +  # Línea de referencia
+  geom_hline(yintercept = 0.32, linetype = "dashed", color = "#1E3A5F") +  # Línea de referencia
   annotate("text", x = min(long_metrics$num_features), y = 0.32,
-           label = "Baseline = 0.32", hjust = 0, vjust = -0.5, color = "red", size = 3) +  # Texto más pequeño
+           label = "Baseline = 0.32", hjust = 0, vjust = -0.5, color = "#1E3A5F", size = 3) +  # Texto más pequeño
   facet_wrap(~ metric_label, scales = "free_y")
 
 print(plotInfFS_external)
 ggsave("experiments/infFS_meat_external.eps", plot = plotInfFS_external,
        width = 8, height = 6, device = "eps")
+
+
+
 
 
 ############################################################
@@ -492,3 +563,17 @@ for (method in names(UFS_Results$Results)[-1]) {
 
 
 UFS_Results$Results[["MCFS"]]$Result[, 1][1:N]
+
+experiments_infFS <- experiments_data[experiments_data$UFS_method == "InfFS", ]
+
+# Filter rows where 'ensemble_method_params' contains B = 500
+filter_index <- sapply(experiments_infFS$ensemble_method_params, function(x) {
+  is.list(x) && "B" %in% names(x) && x[["B"]] == 500
+})
+experiments_infFS_500 <- experiments_infFS[filter_index, ]
+
+# Filter rows where 'ensemble_method_params' contains B = 500
+filter_index <- sapply(experiments_infFS$ensemble_method_params, function(x) {
+  is.list(x) && "B" %in% names(x) && x[["B"]] == 1000
+})
+experiments_infFS_1000 <- experiments_infFS[filter_index, ]
