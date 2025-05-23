@@ -1,10 +1,11 @@
-# Anderlucci's meat with UFS integrated into the package and internal metrics
+# Anderlucci's meat with UFS integrated with diceRplus
 # Anderlucci's: https://rdrr.io/cran/RPEClust/f/
 # UFS: https://github.com/farhadabedinzadeh/AutoUFSTool
 
 library(tidyr)
 library(ggplot2)
 library(dplyr)
+library(diceRplus)
 
 
 # Calcute internal_metrics based on consensus_evaluate of diceR
@@ -197,6 +198,9 @@ save_experiment(exp_data)
 ############################################################
 # Experiment with UFS
 ############################################################
+# UFS Methods list
+# If a method is set to `TRUE`,
+# the AutoHotkey script will send `1` to MATLAB as input for default parameters.
 UFS_Methods <- list(
   "InfFS" = FALSE,
   "Laplacian" = TRUE,
@@ -234,7 +238,7 @@ load("experiments/UFS_Meat.RData")
 B <- 500
 B.star <- 50
 
-# Fixed InfFS
+# Fixed UFS: InfFS
 method <- names(UFS_Results$Results)[1]
 print(method)
 
@@ -319,20 +323,20 @@ df_results <- df_results[order(df_results$metric), ]
 print(df_results)
 
 
-# Contar ocurrencias de los mejores experimentos en todas las métricas
+# Count occurrences of the best experiments across all metric
 best_experiment_counts <- table(sapply(best_metrics, function(x) x$experiment_id))
 
-# Convertir a un data frame y ordenar por frecuencia descendente
+# Convert to a data frame and sort by descending frequency
 ranking_df <- as.data.frame(best_experiment_counts)
 colnames(ranking_df) <- c("experiment_id", "best_metric_count")
 ranking_df <- ranking_df[order(ranking_df$best_metric_count, decreasing = TRUE), ]
 
-# Extraer columnas adicionales basadas en experiment_id
+# Extract additional columns based on experiment_id
 ranking_df$ensemble_method_params <- sapply(ranking_df$experiment_id, function(exp_id) experiments_data$ensemble_method_params[experiments_data$experiment_id == exp_id])
 ranking_df$num_features <- sapply(ranking_df$experiment_id, function(exp_id) experiments_data$num_features[experiments_data$experiment_id == exp_id])
 ranking_df$ensemble_ari <- sapply(ranking_df$experiment_id, function(exp_id) experiments_data$external_metrics[[which(experiments_data$experiment_id == exp_id)]]$ensemble_ari)
 
-# Imprimir el ranking actualizado
+# Print the updated ranking
 print(ranking_df)
 
 
@@ -363,224 +367,31 @@ print(plotInfFS_external)
 plotInfFS_external <- plotInfFS_external +
   geom_hline(yintercept = 0.32, linetype = "dashed", color = "#1E3A5F") +  # Línea de referencia
   annotate("text", x = min(long_metrics$num_features), y = 0.32,
-           label = "Baseline = 0.32", hjust = 0, vjust = -0.5, color = "#1E3A5F", size = 3) +  # Texto más pequeño
+           label = "Baseline = 0.32", hjust = 0, vjust = -0.5, color = "#1E3A5F", size = 2) +  # Texto más pequeño
   facet_wrap(~ metric_label, scales = "free_y")
 
 print(plotInfFS_external)
-ggsave("experiments/infFS_meat_external.eps", plot = plotInfFS_external,
-       width = 8, height = 6, device = "eps")
+ggsave("experiments/infFS_meat_external.eps",
+       plot = plotInfFS_external, device = "eps")
 
 
+plotInfFS_external <- plotInfFS_external +
+  theme(text = element_text(size = 6),  # Reduce el tamaño del texto
+        axis.text = element_text(size = 5),  # Ajusta las etiquetas de los ejes
+        plot.title = element_text(size = 7))  # Modifica el tamaño del título
+plotInfFS_external <- plotInfFS_external +
+  theme(legend.position = "bottom",  # Mantiene la leyenda abajo
+        legend.margin = margin(t = -10, r = 0, b = 0, l = 0))  # Reduce el espacio superior
+ggsave("experiments/infFS_meat_external.eps",
+       plot = plotInfFS_external, device = "eps",
+       width = 5, height = 3, scale = 0.6)  # Reduce la escala del gráfico
+
+# Execution times
+UFS_excution_time <- UFS_Results$ExecutionTimes[[method]]
+infFS_500_execution_time <- sum(experiments_data_all[filter_500,"execution_time"])
+infFS_1000_execution_time <- sum(experiments_data_all[filter_1000,"execution_time"])
+print(round(UFS_excution_time))
+print(round(infFS_500_execution_time))
+print(round(infFS_1000_execution_time))
 
 
-
-############################################################
-# Experiments with other UFS
-############################################################
-B <- 500
-B.star=50
-
-for (method in names(UFS_Results$Results)[-1]) {
-  if (method %in% c("UAR_HKCMI", "RNE", "U2FS", "EGCFS", "CNAFS")) {
-    next
-  }
-  print(method)
-  for (N in seq(25, ncol(Meat$x), by = 25)) {
-    print(N)
-    if (method %in% c("MCFS", "CFS")) {
-      top_features <- UFS_Results$Results[[method]]$Result[, 1][1:N]
-    } else {
-      top_features <- UFS_Results$Results[[method]]$Result[[1]][1:N]
-    }
-    Meat$x_filtered <- Meat$x[, top_features]
-    # Run RPGMMClu_parallel
-    execution_time <- system.time(out.clu_baseline_UFS <- RPGMMClu_parallel(Meat$x_filtered,
-                                                                          Meat$y,
-                                                                          g=5,
-                                                                          B=B,
-                                                                          B.star=B.star))["elapsed"]
-    # Calculate internal metrics
-    internal_metrics_UFS <- calculate_internal_metrics(Meat$x_filtered,
-                                                     out.clu_baseline_UFS$ensemble$label.vec)
-    # Log the experiment
-    exp_data <- experiment_logger(
-      description = paste("Clustering with RPGMMClu - UFS:", method, "- Features:", N),
-      dataset = "Meat",
-      ensemble_method = "RPGMMClu_parallel",
-      ensemble_method_params = list(g = 5, B = B, B.star = B.star),
-      UFS_method = method,
-      UFS_method_params = list(default = 'YES'),
-      num_features = N,
-      features = top_features,
-      execution_time = as.numeric(execution_time),
-      labels_clustering = out.clu_baseline_UFS$ensemble$label.vec,
-      internal_metrics = internal_metrics_UFS,
-      external_metrics = list(ensemble_ari = out.clu_baseline_UFS$ensemble$ari[[1]])
-    )
-    save_experiment(exp_data)
-    }
-}
-
-## Analysis
-
-experiments_data <- load_experiments()
-
-# Define which metrics should be minimized
-metrics_to_minimize <- c("davies_bouldin", "mcclain_rao", "ray_turi", "s_dbw", "Connectivity")
-
-# Extract the best internal metrics based on whether they should be maximized or minimized
-best_metrics <- lapply(names(experiments_data$internal_metrics[[1]]), function(metric) {
-  values <- sapply(experiments_data$internal_metrics, function(x) x[[metric]])
-
-  # Determine whether to find the maximum or minimum value
-  if (metric %in% metrics_to_minimize) {
-    best_row <- which.min(values)  # If it's a metric to minimize, find the minimum
-  } else {
-    best_row <- which.max(values)  # Otherwise, find the maximum
-  }
-
-  list(metric = metric, row = best_row, best_value = values[best_row])
-})
-
-# Convert to a data frame for better visualization
-df_results <- do.call(rbind, lapply(best_metrics, as.data.frame))
-
-# Extract additional columns from experiments_data
-df_results$ensemble_method_params <- sapply(df_results$row, function(row) experiments_data$ensemble_method_params[row])
-df_results$num_features <- sapply(df_results$row, function(row) experiments_data$num_features[row])
-
-print(df_results)
-
-
-# Ranking
-# Count occurrences of best rows across all metrics
-best_row_counts <- table(sapply(best_metrics, function(x) x$row))
-
-# Convert to data frame and sort by count (descending)
-ranking_df <- as.data.frame(best_row_counts)
-colnames(ranking_df) <- c("row", "best_metric_count")
-ranking_df <- ranking_df[order(ranking_df$best_metric_count, decreasing = TRUE), ]
-
-# Add ensemble_method_params and num_features based on row index
-ranking_df$ensemble_method_params <- experiments_data$ensemble_method_params[as.numeric(as.character(ranking_df$row))]
-ranking_df$num_features <- experiments_data$num_features[as.numeric(as.character(ranking_df$row))]
-ranking_df$ensemble_ari <- sapply(ranking_df$row, function(row) experiments_data$external_metrics[[row]]$ensemble_ari)
-print(ranking_df)
-
-############################
-# TO BE REMOVED
-UFS_Results$Results$"Inf-FS2020"$Result[[1]][1:N]
-UFS_Results$ExecutionTimes$"Inf-FS2020"
-top_features <- UFS_Results$Results$"Inf-FS2020"$Result[[1]][1:N]
-Meat$x_filtered <- Meat$x[, top_features]
-
-# Run RPGMMClu_parallel
-execution_time <- system.time(out.clu_baseline_UFS <- RPGMMClu_parallel(Meat$x_filtered,
-                                                                        Meat$y,
-                                                                        g=5,
-                                                                        B=B,
-                                                                        B.star=B.star))["elapsed"]
-# Calculate internal metrics
-internal_metrics_UFS <- calculate_internal_metrics(Meat$x_filtered,
-                                                   out.clu_baseline_UFS$ensemble$label.vec)
-# Log the experiment
-exp_data <- experiment_logger(
-  description = "Clustering with RPGMMClu - UFS:Inf-FS2020",
-  dataset = "Meat",
-  ensemble_method = "RPGMMClu_parallel",
-  ensemble_method_params = list(g = 5, B = B, B.star = B.star),
-  execution_time = as.numeric(execution_time),
-  labels_clustering = out.clu_baseline_UFS$ensemble$label.vec,
-  internal_metrics = internal_metrics_UFS,
-  external_metrics = list(ensemble_ari = out.clu_baseline_UFS$ensemble$ari[[1]])
-)
-save_experiment(exp_data)
-
-experiments_data <- load_experiments()
-
-
-subset(experiments_data, num_features == 70)
-
-valor_max_silhouette <- max(sapply(experiments_data$internal_metrics, function(x) x$silhouette))
-fila_max_silhouette <- which.max(sapply(experiments_data$internal_metrics, function(x) x$silhouette))
-
-experiments_data[fila_max_silhouette, ]
-
-# Extract best internal metrics and find maxima
-maximos_y_filas <- lapply(names(experiments_data$internal_metrics[[1]]), function(metrica) {
-  valores <- sapply(experiments_data$internal_metrics, function(x) x[[metrica]])
-  fila_max <- which.max(valores)
-  list(metrica = metrica, fila = fila_max, valor_maximo = valores[fila_max])
-})
-
-# Convert to a data frame for better visualization
-df_resultados <- do.call(rbind, lapply(maximos_y_filas, as.data.frame))
-
-print(df_resultados)
-
-
-# Define which metrics should be minimized
-metrics_to_minimize <- c("davies_bouldin", "mcclain_rao", "ray_turi", "s_dbw", "Connectivity")
-
-# Extract the best internal metrics based on whether they should be maximized or minimized
-best_metrics <- lapply(names(experiments_data$internal_metrics[[1]]), function(metric) {
-  values <- sapply(experiments_data$internal_metrics, function(x) x[[metric]])
-
-  # Determine whether to find the maximum or minimum value
-  if (metric %in% metrics_to_minimize) {
-    best_row <- which.min(values)  # If it's a metric to minimize, find the minimum
-  } else {
-    best_row <- which.max(values)  # Otherwise, find the maximum
-  }
-
-  list(metric = metric, row = best_row, best_value = values[best_row])
-})
-
-# Convert to a data frame for better visualization
-df_results <- do.call(rbind, lapply(best_metrics, as.data.frame))
-
-print(df_results)
-
-# Count occurrences of best rows across all metrics
-best_row_counts <- table(sapply(best_metrics, function(x) x$row))
-
-# Convert to data frame and sort by count (descending)
-ranking_df <- as.data.frame(best_row_counts)
-colnames(ranking_df) <- c("row", "best_metric_count")
-ranking_df <- ranking_df[order(ranking_df$best_metric_count, decreasing = TRUE), ]
-
-print(ranking_df)
-
-for (method in names(UFS_Results$Results)[-1]) {
-  # Omit this methods (no ranking)
-  if (method %in% c("UAR_HKCMI", "RNE", "U2FS", "EGCFS", "CNAFS")) {
-    next
-  }
-  print(method)
-  print(str(UFS_Results$Results[[method]]$Result))
-
-  if (method %in% c("MCFS", "CFS")) {
-    top_features <- UFS_Results$Results[[method]]$Result[, 1][1:N]
-  } else {
-    top_features <- UFS_Results$Results[[method]]$Result[[1]][1:N]
-  }
-
-  print(top_features)
-}
-
-
-UFS_Results$Results[["MCFS"]]$Result[, 1][1:N]
-
-experiments_infFS <- experiments_data[experiments_data$UFS_method == "InfFS", ]
-
-# Filter rows where 'ensemble_method_params' contains B = 500
-filter_index <- sapply(experiments_infFS$ensemble_method_params, function(x) {
-  is.list(x) && "B" %in% names(x) && x[["B"]] == 500
-})
-experiments_infFS_500 <- experiments_infFS[filter_index, ]
-
-# Filter rows where 'ensemble_method_params' contains B = 500
-filter_index <- sapply(experiments_infFS$ensemble_method_params, function(x) {
-  is.list(x) && "B" %in% names(x) && x[["B"]] == 1000
-})
-experiments_infFS_1000 <- experiments_infFS[filter_index, ]
