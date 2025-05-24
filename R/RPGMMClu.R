@@ -36,6 +36,7 @@
 #'
 #' @export
 
+# Anderlucci's: https://rdrr.io/cran/RPEClust/f/
 RPGMMClu<-function(x, true.cl=NULL, g, d = NULL, c = 10, B = 1000, B.star = 100, modelNames = NULL, diagonal = FALSE, ensmethod="DWH", seed = 101, verb = FALSE){
 
   p<-ncol(x)
@@ -88,10 +89,12 @@ RPGMMClu<-function(x, true.cl=NULL, g, d = NULL, c = 10, B = 1000, B.star = 100,
   cl.ens.1<-data.frame(cl.m[,order(Bic,decreasing=TRUE)[1:B.star]])
   cl.ens.1.2<-lapply(cl.ens.1,function(x) as.cl_membership(x))
   cl.consensus<-apply(cl_consensus(cl.ens.1.2,method=ensmethod)$.Data,1,which.max)
-  if(!is.null(true.cl)) ari<-adjustedRandIndex(cl.consensus,true.cl)
 
-
-  names(ari)<-paste0("B.star=",B.star)
+  ari <- NULL
+  if(!is.null(true.cl)) {
+    ari<-adjustedRandIndex(cl.consensus,true.cl)
+    names(ari)<-paste0("B.star=",B.star)
+  }
   ensemble<-list(ari = ari, label.vec = cl.consensus)
   individual<-list(label.vec = cl.m, ari = Ari, bic = Bic, bic.GMM=bic.c, bic.reg=bic.nc)
   return(list(ensemble = ensemble, individual = individual))
@@ -193,9 +196,11 @@ RPGMMClu_parallel <- function(x, true.cl=NULL, g, d = NULL, c = 10, B = 1000, B.
   cl.ens.1.2 <- lapply(cl.ens.1, function(x) as.cl_membership(x))
   cl.consensus <- apply(cl_consensus(cl.ens.1.2, method=ensmethod)$.Data, 1, which.max)
 
-  if (!is.null(true.cl)) ari <- adjustedRandIndex(cl.consensus, true.cl)
-
-  names(ari) <- paste0("B.star=", B.star)
+  ari <- NULL
+  if (!is.null(true.cl)) {
+    ari <- adjustedRandIndex(cl.consensus, true.cl)
+    names(ari) <- paste0("B.star=", B.star)
+  }
   ensemble <- list(ari = ari, label.vec = cl.consensus)
   individual <- list(label.vec = cl.m, ari = Ari, bic = Bic)
 
