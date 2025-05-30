@@ -220,3 +220,14 @@
 #' Meat$x[1:5,1:5]
 #' Meat$y
 "Meat"
+
+#' Unsupervised Feature Selection Methods
+#'
+#' List of methods used in unsupervised feature selection analysis.
+#' If a method is set to `TRUE`:
+#' the AutoHotkey script will send `1` to MATLAB as input for default parameters.
+#'
+#' @format A list with method names and logical values indicating AutoHotkey usage.
+#' @usage data(UFS_Methods)
+"UFS_Methods"
+

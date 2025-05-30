@@ -55,7 +55,7 @@ RPGMMClu<-function(x, true.cl=NULL, g, d = NULL, c = 10, B = 1000, B.star = 100,
     A.bar <- qr.Q(qr(A),complete=TRUE)[,(d+1):p]
     y<-x%*%A
     y.bar<-x%*%A.bar
-    y.star<-cbind(y,y.bar)
+    # y.star<-cbind(y,y.bar)
     out<-Mclust(y,g, verbose=FALSE, modelNames = modelNames)
     loglik.c[b]<-out$loglik
     cl.m[,b]<-out$cl
@@ -141,7 +141,7 @@ RPGMMClu<-function(x, true.cl=NULL, g, d = NULL, c = 10, B = 1000, B.star = 100,
 # Parallel implementation of RPGMMClu
 RPGMMClu_parallel <- function(x, true.cl=NULL, g, d = NULL, c = 10, B = 1000, B.star = 100, modelNames = NULL, diagonal = FALSE, ensmethod="DWH", seed = 101, verb = FALSE){
 
-  options(future.globals.maxSize = 1 * 1024^3)  # 1 GB
+  options(future.globals.maxSize = 1 * 16 * 1024^3)  # 1 GB
 
   p <- ncol(x)
   if(is.null(d)) d <- ceiling(c * log(g))
@@ -158,7 +158,7 @@ RPGMMClu_parallel <- function(x, true.cl=NULL, g, d = NULL, c = 10, B = 1000, B.
     A.bar <- qr.Q(qr(A), complete=TRUE)[, (d+1):p]
     y <- x %*% A
     y.bar <- x %*% A.bar
-    y.star <- cbind(y, y.bar)
+    # y.star <- cbind(y, y.bar)
 
     out <- Mclust(y, g, verbose=FALSE, modelNames = modelNames)
     loglik.c <- out$loglik
@@ -206,3 +206,16 @@ RPGMMClu_parallel <- function(x, true.cl=NULL, g, d = NULL, c = 10, B = 1000, B.
 
   return(list(ensemble = ensemble, individual = individual))
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
