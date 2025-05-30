@@ -89,8 +89,7 @@ silhouette_values <- cluster::silhouette(out.clu_baseline$ensemble$label.vec, di
 silhouette_score <- mean(silhouette_values[, 3])
 print(silhouette_score)
 
-data(COIL20)
-dim(COIL20)
+
 
 data(prostate_ge)
 dim(prostate_ge$x)
@@ -150,3 +149,9 @@ execution_time <- system.time(out.clu_baseline <- RPGMMClu_parallel(ALLAML$x_fil
                                                                     B=B,
                                                                     B.star=B.star,
                                                                     verb=TRUE))["elapsed"]
+############################################################
+# COIL20
+############################################################
+
+data(COIL20)
+dim(COIL20$x)
