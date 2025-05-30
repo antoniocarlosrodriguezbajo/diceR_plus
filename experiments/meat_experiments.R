@@ -233,10 +233,14 @@ UFS_Methods <- list(
 load("experiments/UFS_Meat.RData")
 
 ############################################################
-# Experiment with InfFS and N most relevant features
+# Experiments with InfFS and N most relevant features
+# (B,B*):
+#        (1000,100)
+#        (500,50)
+#        (100,10)
 ############################################################
-B <- 500
-B.star <- 50
+B <- 100
+B.star <- 10
 
 # Fixed UFS: InfFS
 method <- names(UFS_Results$Results)[1]
@@ -282,6 +286,10 @@ for (N in seq(25, ncol(Meat$x), by = 25)) {
 
 experiments_data_all <- load_experiments()
 
+# B=100, B*=10
+filter_100 <- experiments_data_all$experiment_id >= 206 &
+  experiments_data_all$experiment_id <= 247
+
 # B=500, B*=50
 filter_500 <- experiments_data_all$experiment_id >= 64 &
               experiments_data_all$experiment_id <= 105
@@ -290,7 +298,7 @@ filter_500 <- experiments_data_all$experiment_id >= 64 &
 filter_1000 <- experiments_data_all$experiment_id >= 22 &
   experiments_data_all$experiment_id <= 63
 
-experiments_data <- experiments_data_all[filter_500 | filter_1000,]
+experiments_data <- experiments_data_all[filter_100 | filter_500 | filter_1000,]
 
 # Define which metrics should be minimized
 metrics_to_minimize <- c("c_index", "davies_bouldin", "mcclain_rao", "g_plus",
@@ -345,7 +353,7 @@ print(ranking_df)
 # Graphics
 
 plotInfFS_internal <- plot_metrics_vs_num_features2(experiments_data_all[filter_500,], "B=500,B*=50",
-                                                    experiments_data_all[filter_1000,], "B=1000,B*=100",
+                                                    experiments_data_all[filter_100,], "B=100,B*=10",
                                                     "RPEClu params",
                                                    internal = TRUE,
                                                    "Number of selected features (InfFS) vs internal metrics",
@@ -355,7 +363,7 @@ print(plotInfFS_internal)
 
 
 plotInfFS_external <- plot_metrics_vs_num_features2(experiments_data_all[filter_500,], "B=500,B*=50",
-                                                    experiments_data_all[filter_1000,], "B=1000,B*=100",
+                                                    experiments_data_all[filter_100,], "B=100,B*=10",
                                                    internal = FALSE,
                                                    "RPEClu params",
                                                    "Number of selected features (infFS) vs ARI",
