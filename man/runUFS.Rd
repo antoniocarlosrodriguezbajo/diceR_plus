@@ -2,7 +2,7 @@
 % Please edit documentation in R/runUFS.R
 \name{runUFS}
 \alias{runUFS}
-\title{Execute Unsupervised Feature Selection (UFS) Methods in MATLAB}
+\title{Execute Unsupervised Feature Selection (UFS) Methods in MATLAB (default parameters)}
 \usage{
 runUFS(
   data,
