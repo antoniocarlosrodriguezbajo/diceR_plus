@@ -2,6 +2,28 @@ library(diceRplus)
 data(lung_cancer)
 
 
+# Calcute internal_metrics based on consensus_evaluate of diceR
+calculate_internal_metrics <- function(data,cluster_labels) {
+  num_labels <- length(cluster_labels)
+
+  # Create structure for consensus_evaluate
+  cc_data <- array(cluster_labels, dim = c(num_labels, 1, 1, 1))
+  # row_names <- rownames(data)
+  row_names <- if (!is.null(rownames(data))) rownames(data) else seq_len(nrow(data))
+    dimnames(cc_data) <- list(
+    row_names,  # Primer nivel de nombres: nombres de las filas de Meat$x
+    "R1",       # Repetition
+    "RPGMMClu", # Clustering algorithm
+    "5"         # Number of clusters
+  )
+  # Evaluation
+  result_evaluation <- consensus_evaluate(data, cc_data)
+  metrics_df <- result_evaluation$ii[[1]]
+  metrics_list <- lapply(metrics_df[1, -1], function(x) unname(x))
+  return(metrics_list)
+}
+
+
 #lung_cancer$x <- scale(lung_cancer$x)
 
 # Verify normalizacion
@@ -78,6 +100,8 @@ B.star <- round(B/10)
 
 cat("N:", N, "\nB:", B, "\nB.star:", B.star, "\n")
 
+scores <- list()
+metrics_list <- list()
 
 for (method in names(UFS_results$Results)) {
   print(method)
@@ -88,8 +112,68 @@ for (method in names(UFS_results$Results)) {
                                                                       B=B,
                                                                       B.star=B.star,
                                                                       verb=TRUE))["elapsed"]
-  print(out.clu_baseline$ensemble)
+  # Calculate internal metrics
+  internal_metrics <- calculate_internal_metrics(lung_cancer$x[, top_features],
+                                                 out.clu_baseline_UFS$ensemble$label.vec)
+
+  cat("ARI:", out.clu_baseline$ensemble$ari, "\n")
+  cat("BIC:", out.clu_baseline$ensemble$bic.final, "\n")
+  print(internal_metrics)
+  metrics_list[[method]] <- internal_metrics
 }
+
+# Convertir cada columna a numérica
+metrics_df <- as.data.frame(lapply(metrics_df, function(x) as.numeric(unlist(x))))
+
+# Restaurar nombres de los métodos
+rownames(metrics_df) <- names(metrics_list)
+
+# Ahora sí, aplicar la normalización
+normalize <- function(x) (x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
+metrics_norm <- as.data.frame(lapply(metrics_df, normalize))
+
+# Restaurar nombres de los métodos en la tabla normalizada
+rownames(metrics_norm) <- rownames(metrics_df)
+
+metrics_norm[is.na(metrics_norm)] <- 0
+
+# Invertir métricas donde menor es mejor
+metrics_norm$davies_bouldin <- 1 - metrics_norm$davies_bouldin
+metrics_norm$Compactness <- 1 - metrics_norm$Compactness
+metrics_norm$Connectivity <- 1 - metrics_norm$Connectivity
+metrics_norm$c_index <- 1 - metrics_norm$c_index
+metrics_norm$mcclain_rao <- 1 - metrics_norm$mcclain_rao
+metrics_norm$sd_dis <- 1 - metrics_norm$sd_dis
+metrics_norm$ray_turi <- 1 - metrics_norm$ray_turi
+
+
+
+# Calcular score después de la normalización
+weights <- c(
+  calinski_harabasz = 0.2,
+  dunn = 0.15,
+  pbm = 0.2,
+  tau = 0,
+  gamma = 0,
+  c_index = 0,
+  mcclain_rao = 0,
+  sd_dis = 0,
+  ray_turi = 0,
+  g_plus = 0,
+  silhouette = 0.15,
+  s_dbw = 0,
+  davies_bouldin = 0.1,
+  Compactness = 0.1,
+  Connectivity = 0.1
+)
+
+scores <- rowSums(sweep(metrics_norm, 2, weights, "*"))  # Multiplica por pesos
+
+# Obtener el mejor método según el score
+best_method <- names(which.max(scores))
+
+cat("El mejor método basado en métricas internas es:", best_method, "\n")
+
 
 # Fixed UFS: Lapacian
 method <- names(UFS_results$Results)[4]
@@ -111,8 +195,8 @@ for (N in seq(20, cum_var_90*4, by = 10)) {
                                                                           B = B,
                                                                           B.star = B.star))["elapsed"]
   # Calculate internal metrics
-  #internal_metrics_UFS <- calculate_internal_metrics(lung_cancer$x_filtered,
-  #                                                   out.clu_baseline_UFS$ensemble$label.vec)
+  internal_metrics <- calculate_internal_metrics(lung_cancer$x_filtered,
+                                                     out.clu_baseline_UFS$ensemble$label.vec)
 
   # Log the experiment
   exp_data <- experiment_logger(
@@ -130,6 +214,8 @@ for (N in seq(20, cum_var_90*4, by = 10)) {
     external_metrics = list(ensemble_ari = out.clu_baseline_UFS$ensemble$ari[[1]])
   )
   cat("N:", N, "\nARI:", out.clu_baseline$ensemble$ari, "\n")
+  print(internal_metrics)
+
   # save_experiment(exp_data)
 }
 

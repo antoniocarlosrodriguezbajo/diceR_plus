@@ -188,6 +188,8 @@ RPGMMClu_parallel <- function(x, true.cl=NULL, g, d = NULL, c = 10, B = 1000, B.
 
   # Convert results to vectors
   Bic <- sapply(results, function(x) x$Bic)
+  bic.c <- sapply(results, function(x) x$bic.c)
+  bic.nc <- sapply(results, function(x) x$bic.nc)
   cl.m <- do.call(cbind, lapply(results, function(x) x$cl.m))
   Ari <- sapply(results, function(x) x$Ari)
 
@@ -196,12 +198,17 @@ RPGMMClu_parallel <- function(x, true.cl=NULL, g, d = NULL, c = 10, B = 1000, B.
   cl.ens.1.2 <- lapply(cl.ens.1, function(x) as.cl_membership(x))
   cl.consensus <- apply(cl_consensus(cl.ens.1.2, method=ensmethod)$.Data, 1, which.max)
 
+  # Compute the final joint BIC for clustering
+  bic.final.GMM <- mean(bic.c[order(Bic, decreasing = TRUE)[1:B.star]])
+  bic.final.reg <- mean(bic.nc[order(Bic, decreasing = TRUE)[1:B.star]])
+  bic.final <- bic.final.GMM + bic.final.reg
+
   ari <- NULL
   if (!is.null(true.cl)) {
     ari <- adjustedRandIndex(cl.consensus, true.cl)
     names(ari) <- paste0("B.star=", B.star)
   }
-  ensemble <- list(ari = ari, label.vec = cl.consensus)
+  ensemble <- list(ari = ari, label.vec = cl.consensus, bic.final = bic.final)
   individual <- list(label.vec = cl.m, ari = Ari, bic = Bic)
 
   return(list(ensemble = ensemble, individual = individual))
