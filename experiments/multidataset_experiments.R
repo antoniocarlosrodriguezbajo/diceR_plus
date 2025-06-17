@@ -1,7 +1,4 @@
 library(diceRplus)
-library(mclust)
-library(cluster)
-
 UFS_Methods <- list(
   "Inf-FS2020" = TRUE
 )
@@ -9,57 +6,35 @@ UFS_Methods <- list(
 algorithms = c("nmf", "hc", "diana", "km", "pam", "ap", "sc",
                "gmm", "block", "som", "cmeans", "hdbscan")
 
-
-
-prepare_consensus_evaluation <- function(data,cluster_labels, alg_name="RPGMMClu") {
-  num_labels <- length(cluster_labels)
-
-  # Create structure for consensus_evaluate
-  cc_data <- array(cluster_labels, dim = c(num_labels, 1, 1, 1))
-  # row_names <- rownames(data)
-  row_names <- if (!is.null(rownames(data))) rownames(data) else seq_len(nrow(data))
-  dimnames(cc_data) <- list(
-    row_names,  # Primer nivel de nombres: nombres de las filas de Meat$x
-    "R1",       # Repetition
-    alg_name, # Clustering algorithm
-    "5"         # Number of clusters
+calculate_external_metrics <- function (E, k, ref_labels) {
+  # List of consensus methods and their specific arguments
+  consensus_methods <- list(
+    kmodes   = function(E) k_modes(E, is.relabelled = FALSE, seed = 1),
+    majority = function(E) majority_voting(E, is.relabelled = FALSE),
+    lce      = function(E) LCE(E, k, sim.mat = "cts"),
+    lca      = function(E) LCA(E, is.relabelled = FALSE, seed = 1)
   )
-  # Structure
-  return(cc_data)
+
+  # Apply each consensus method
+  consensus_labels <- lapply(consensus_methods, function(f) f(E))
+
+  # Relabel only the methods that need it (adjust as needed)
+  aligned_labels <- list(
+    kmodes   = relabel_class(consensus_labels$kmodes, ref_labels),
+    majority = relabel_class(consensus_labels$majority, ref_labels),
+    lce      = relabel_class(consensus_labels$lce, ref_labels),
+    lca      = relabel_class(consensus_labels$lca, ref_labels)
+  )
+
+  # Evaluate results
+  eval_results <- lapply(aligned_labels, function(labels) list(
+    confmat = ev_confmat(labels, ref_labels),
+    nmi     = ev_nmi(labels, ref_labels),
+    ari     = adjustedRandIndex(labels, ref_labels)
+  ))
+
+  return(eval_results)
 }
-
-generate_random_projections <- function(x, d = NULL, c = 10, B = 1000, seed = 101) {
-  p <- ncol(x)
-  if (is.null(d)) {
-    d <- ceiling(c * log(p))  # Ajuste para usar p
-  }
-  print(d)
-  set.seed(seed)
-  RPbase <- generateRP(p, d, B)  # Genera B matrices de proyección aleatorias
-
-  # Aplicación de las proyecciones en un solo paso
-  projections <- array(x %*% RPbase, dim = c(nrow(x), d, B))
-
-  return(projections)
-}
-
-# Implementación simplificada del algoritmo CGUFS
-cgufs_selection <- function(data, k1=5, k2=5,quantile=0.75) {
-  # Paso 1: Agrupación de muestras
-  sample_clusters <- kmeans(data, centers=k1)$cluster
-
-  # Paso 2: Cálculo de importancia de características
-  feature_importance <- apply(data, 2, function(x) {
-    summary(aov(x ~ as.factor(sample_clusters)))[[1]][1,4]
-  })
-
-  # Paso 3: Selección adaptativa
-  selected_features <- which(feature_importance > quantile(feature_importance, quantile))
-  return(selected_features)
-}
-
-
-
 
 ############################
 # Meat
@@ -83,91 +58,130 @@ top_features <- UFS_results$Results[[method]]$Result[[3]]
 
 sprintf("The %s method selected %d features.", method, length(top_features))
 
-
-g <- 5
 B <- 100
-B.star <- round(B/10)
-execution_time <- system.time(out.clu_baseline <- RPGMMClu_noens_parallel(data$x[, top_features],
-                                                                          NULL,
-                                                                          g=5,
-                                                                          B=B,
-                                                                          B.star=B.star,
-                                                                          verb=TRUE))["elapsed"]
+execution_time <- system.time(RPClu_results <- RPClu_parallel(data$x[, top_features],
+                                                                 clust_fun = "gmm",
+                                                                 g=5,
+                                                                 B=B,
+                                                                 verb=TRUE))["elapsed"]
 
-# Internal Metrics
-E <- as.matrix(out.clu_baseline$label.vec)
+E <- as.matrix(RPClu_results$clusterings)
 
-E_4d <- array(E, dim = c(dim(E)[1], dim(E)[2], 1, 1))
-rownames <- paste0("Sample", seq_len(dim(E)[1]))
-repsnames <- paste0("RP1", seq_len(dim(E)[2]))
-algonames <- "Algorithm"
-knames <- as.character(k)
-dimnames(E_4d) <- list(rownames, repsnames, algonames, knames)
+k=5
+ref_labels <- as.integer(data$y)
 
-E_list <- list(kmodes=E, majority=E, cspa=E_4d, lce=E, lca=E)
+external_metrics <- calculate_external_metrics(E,k,ref_labels)
 
-k = 5
-# List of consensus functions
-consensus_methods <- list(
-  kmodes   = function(E, k)      k_modes(E, is.relabelled = FALSE, seed = 1),
-  majority = function(E, k)      majority_voting(E, is.relabelled = FALSE),
-  cspa     = function(E, k)      CSPA(E, k),
-  lce      = function(E, k)      LCE(E, k, sim.mat = "cts"),
-  lca      = function(E, k)      LCA(E, is.relabelled = FALSE, seed = 1)
-)
+external_metrics
 
-consensus_labels <- mapply(function(f, EE) f(EE, k), consensus_methods, E_list, SIMPLIFY = FALSE)
-
-cc_list <- mapply(
-  function(lbls, name) prepare_consensus_evaluation(data$x, lbls, paste(method, name, B, sep = "+")),
-  consensus_labels, names(consensus_labels), SIMPLIFY = FALSE
-)
-
-set.seed(123)
-result_evaluation <- do.call(consensus_evaluate, c(
-  list(data$x),
-  cc_list,
-  list(ref.cl = as.integer(data$y), trim = TRUE, n = 1, reweigh=TRUE)
-))
-
-print(result_evaluation$trim.obj$top.list)
-print(result_evaluation$trim.obj$rank.matrix)
-print(result_evaluation$ii)
-
-print(result_evaluation$ei)
-
-adjustedRandIndex(cc_list$lca, as.integer(data$y))
-
-# Direct with consensus labels
-
-# Etiquetas de consenso por varios métodos
-consensus_labels_kmodes <- k_modes(E, is.relabelled = FALSE, seed = 1)
-consensus_labels_majority <- majority_voting(E, is.relabelled = FALSE)
-consensus_labels_lce <- LCE(E, k, sim.mat = "cts")
-consensus_labels_lca <- LCA(E, is.relabelled = FALSE, seed = 1)
-
-adjustedRandIndex(consensus_labels_kmodes, as.integer(data$y))
-adjustedRandIndex(consensus_labels_majority, as.integer(data$y))
-adjustedRandIndex(consensus_labels_lce, as.integer(data$y))
-adjustedRandIndex(consensus_labels_lca, as.integer(data$y))
-
-
-# NMI
-ev_nmi(consensus_labels_kmodes, as.integer(data$y))
-ev_nmi(consensus_labels_majority, as.integer(data$y))
-ev_nmi(consensus_labels_lce, as.integer(data$y))
-ev_nmi(consensus_labels_lca, as.integer(data$y))
-
-# Otras métricas externas (accuracy, kappa, etc.)
-ev_confmat(consensus_labels_kmodes, as.integer(data$y))
-ev_confmat(consensus_labels_majority, as.integer(data$y))
-ev_confmat(consensus_labels_lce,as.integer(data$y))
-ev_confmat(consensus_labels_lca, as.integer(data$y))
-
-
+# > external_metrics
+# $kmodes
+# $kmodes$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             multiclass     0.823
+# 2 kap                  multiclass     0.775
+# 3 sens                 macro          0.843
+# 4 spec                 macro          0.954
+# 5 ppv                  macro          0.847
+# 6 npv                  macro          0.954
+# 7 mcc                  multiclass     0.776
+# 8 j_index              macro          0.797
+# 9 bal_accuracy         macro          0.898
+# 10 detection_prevalence macro          0.2
+# 11 precision            macro          0.847
+# 12 recall               macro          0.843
+# 13 f_meas               macro          0.843
+#
+# $kmodes$nmi
+# [1] 0.7794098
+#
+# $kmodes$ari
+# [1] 0.666964
+#
+#
+# $majority
+# $majority$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             multiclass     0.814
+# 2 kap                  multiclass     0.764
+# 3 sens                 macro          0.836
+# 4 spec                 macro          0.951
+# 5 ppv                  macro          0.872
+# 6 npv                  macro          0.958
+# 7 mcc                  multiclass     0.786
+# 8 j_index              macro          0.787
+# 9 bal_accuracy         macro          0.894
+# 10 detection_prevalence macro          0.2
+# 11 precision            macro          0.872
+# 12 recall               macro          0.836
+# 13 f_meas               macro          0.821
+#
+# $majority$nmi
+# [1] 0.8084113
+#
+# $majority$ari
+# [1] 0.6827528
+#
+#
+# $lce
+# $lce$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             multiclass     0.745
+# 2 kap                  multiclass     0.676
+# 3 sens                 macro          0.778
+# 4 spec                 macro          0.933
+# 5 ppv                  macro          0.684
+# 6 npv                  macro          0.948
+# 7 mcc                  multiclass     0.730
+# 8 j_index              macro          0.711
+# 9 bal_accuracy         macro          0.855
+# 10 detection_prevalence macro          0.2
+# 11 precision            macro          0.684
+# 12 recall               macro          0.778
+# 13 f_meas               macro          0.713
+#
+# $lce$nmi
+# [1] 0.8507881
+#
+# $lce$ari
+# [1] 0.6882715
+#
+#
+# $lca
+# $lca$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             multiclass     0.805
+# 2 kap                  multiclass     0.753
+# 3 sens                 macro          0.829
+# 4 spec                 macro          0.949
+# 5 ppv                  macro          0.837
+# 6 npv                  macro          0.951
+# 7 mcc                  multiclass     0.759
+# 8 j_index              macro          0.778
+# 9 bal_accuracy         macro          0.889
+# 10 detection_prevalence macro          0.2
+# 11 precision            macro          0.837
+# 12 recall               macro          0.829
+# 13 f_meas               macro          0.825
+#
+# $lca$nmi
+# [1] 0.7791981
+#
+# $lca$ari
+# [1] 0.6592031
+#
+# "The Inf-FS2020 method selected 91 features."
 
 ############################
-# ALLAML
+# ALLAML  TBC
 ############################
 data(ALLAML)
 
@@ -176,151 +190,8 @@ data <- ALLAML
 mean(data$x)
 sd(data$x)
 
-top_features <- cgufs_selection(data$x, k1=2,k2=2,quantile = 0.9)
-sprintf("The %s method selected %d features.", "cgufs", length(top_features))
-
-
-# Run dice
-dice.obj <- dice(
-  data =  data$x[,top_features],
-  reps=100,
-  p.item = 1,
-  nk = 2,
-  algorithms = c("km"),
-  ref.cl = as.integer(data$y),
-  evaluate = TRUE,
-  progress = TRUE,
-  verbose = TRUE,
-
-)
-
-dice.obj$indices$ei
-
-# Run just once
-UFS_results_file <- "experiments/UFS_ALLAML_Inf-FS2020.RData"
-# UFS_results <- runUFS(data$x, UFS_Methods)
-# save(UFS_results, file = UFS_results_file)
-
-# Run just once
-# DGUFS default parameters
-# Number of clusters: 2
-# Alpha: 0.5
-# Beta: 0.9
-# Dimension of selected features: 150
-#ufs_candidates = list("DGUFS")
-#UFS_results_file <- "experiments/UFS_ALLAML_ge_DGUFS.RData"
-#UFS_results <- runUFS_manual_params(data$x, ufs_candidates)
-#save(UFS_results, file = UFS_results_file)
-
-load(UFS_results_file)
-
-top_features <- UFS_results$Results[[method]]$Result[[3]]
-sprintf("The %s method selected %d features.", method, length(top_features))
-
-# Generar proyecciones aleatorias
-rp <- generate_random_projections(data$x[, top_features], B=2000)
-
-k <- 2  # o el número de clusters de tu interés
-labels_list <- lapply(1:2000, function(i) {
-  km <- kmeans(rp[,,i], centers = k)
-  km$cluster
-})
-
-compactness_scores <- sapply(1:2000, function(i) {
-  compactness(rp[,,i], labels_list[[i]])
-})
-
-best_idx <- order(compactness_scores)[1:200]
-
-cl_matrix <- do.call(cbind, labels_list[best_idx])
-
-# k-modes
-final_clusters <- k_modes(cl_matrix)
-# o majority voting
-final_clusters2 <- majority_voting(cl_matrix)
-
-adjustedRandIndex(final_clusters2, as.integer(data$y))
-
-
-
-
-# Calcular coeficientes de silueta con k-means
-siluette_scores <- sapply(1:dim(rp)[3], function(i) {
-  dat <- rp[,,i]
-  km_model <- kmeans(dat, centers=2)  # Ajusta k-means con 2 clusters
-  cl <- km_model$cluster  # Extrae etiquetas de cluster
-
-  sil <- silhouette(cl, dist(dat))  # Calcula coeficiente de silueta
-  mean(sil[, 3])  # Retorna el promedio de los valores de silueta
-})
-
-# Seleccionar las 50 mejores proyecciones
-best_idx <- order(siluette_scores, decreasing=TRUE)[1:50]  # Mejores por silueta
-best_projections <- lapply(best_idx, function(i) rp[,,i])
-rp_combined <- do.call(cbind, best_projections)
-
-# Run dice
-dice.obj <- dice(
-  data =  rp_combined,
-  nk = 2,
-  p.item = 1,
-  reps = 1,
-  algorithms = "km",
-  ref.cl = as.integer(data$y),
-  evaluate = TRUE,
-  plot = FALSE,
-  trim = TRUE,
-  reweigh = TRUE,
-  n = 2,
-  progress = TRUE,
-  verbose = TRUE
-)
-
-dice.obj$indices$ei
-
-# NMF_Brunet  9.887782e-02 0.7222222
-
-
-g <- 2
-B <- 100
-B.star <- round(B/10)
-execution_time <- system.time(out.clu_baseline <- RPGMMClu_noens_parallel(data$x[, top_features],
-                                                                          data$y,
-                                                                          g=2,
-                                                                          B=B,
-                                                                          B.star=B.star,
-                                                                          verb=TRUE))["elapsed"]
-
-E <- as.matrix(out.clu_baseline$label.vec)
-k = 2
-# Etiquetas de consenso por varios métodos
-consensus_labels_kmodes <- k_modes(E, is.relabelled = FALSE, seed = 1)
-consensus_labels_majority <- majority_voting(E, is.relabelled = FALSE)
-# consensus_labels_cspa <- CSPA(E, k)
-consensus_labels_lce <- LCE(E, k, sim.mat = "cts")
-consensus_labels_lca <- LCA(E, is.relabelled = FALSE, seed = 1)
-
-
-adjustedRandIndex(consensus_labels_kmodes, as.integer(data$y))
-adjustedRandIndex(consensus_labels_majority, as.integer(data$y))
-adjustedRandIndex(consensus_labels_lce, as.integer(data$y))
-adjustedRandIndex(consensus_labels_lca, as.integer(data$y))
-
-
-# NMI
-ev_nmi(consensus_labels_kmodes, as.integer(data$y))
-ev_nmi(consensus_labels_majority, as.integer(data$y))
-ev_nmi(consensus_labels_lce, as.integer(data$y))
-ev_nmi(consensus_labels_lca, as.integer(data$y))
-
-# Otras métricas externas (accuracy, kappa, etc.)
-ev_confmat(consensus_labels_kmodes, as.integer(data$y))
-ev_confmat(consensus_labels_majority, as.integer(data$y))
-ev_confmat(consensus_labels_lce,as.integer(data$y))
-ev_confmat(consensus_labels_lca, as.integer(data$y))
-
 ############################
-# leukemia
+# leukemia TBC
 ############################
 
 
@@ -345,28 +216,128 @@ method = "Inf-FS2020"
 top_features <- UFS_results$Results[[method]]$Result[[3]]
 sprintf("The %s method selected %d features.", method, length(top_features))
 
-# Run dice
-dice.obj <- dice(
-  data =  data$x[, top_features],
-  nk = 5,
-  p.item = 1,
-  reps = 1,
-  algorithms = algorithms,
-  cons.funs = c("majority"),
-  ref.cl = as.integer(data$y),
-  evaluate = TRUE,
-  plot = FALSE,
-  progress = TRUE,
-  verbose = TRUE
-)
+g <- 5
+B <- 100
+execution_time <- system.time(RPClu_results <- RPClu_parallel(data$x[, top_features],
+                                                              clust_fun = "gmm",
+                                                              g=g,
+                                                              B=B,
+                                                              verb=TRUE))["elapsed"]
 
-dice.obj$indices$ei
-# GMM  0.47031289 0.7339901
-# BLOCK 0.02107671 0.665024
-# SOM 0.36508799 0.6551724
+E <- as.matrix(RPClu_results$clusterings)
+
+external_metrics <- calculate_external_metrics(E,g, as.integer(data$y))
+
+external_metrics
+
+# > external_metrics
+# $kmodes
+# $kmodes$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             multiclass     0.690
+# 2 kap                  multiclass     0.497
+# 3 sens                 macro          0.634
+# 4 spec                 macro          0.912
+# 5 ppv                  macro          0.646
+# 6 npv                  macro          0.888
+# 7 mcc                  multiclass     0.527
+# 8 j_index              macro          0.546
+# 9 bal_accuracy         macro          0.773
+# 10 detection_prevalence macro          0.2
+# 11 precision            macro          0.646
+# 12 recall               macro          0.634
+# 13 f_meas               macro          0.627
+#
+# $kmodes$nmi
+# [1] 0.4651067
+#
+# $kmodes$ari
+# [1] 0.3685128
+#
+#
+# $majority
+# $majority$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             multiclass     0.704
+# 2 kap                  multiclass     0.499
+# 3 sens                 macro          0.621
+# 4 spec                 macro          0.911
+# 5 ppv                  macro          0.696
+# 6 npv                  macro          0.890
+# 7 mcc                  multiclass     0.524
+# 8 j_index              macro          0.532
+# 9 bal_accuracy         macro          0.766
+# 10 detection_prevalence macro          0.2
+# 11 precision            macro          0.696
+# 12 recall               macro          0.621
+# 13 f_meas               macro          0.634
+#
+# $majority$nmi
+# [1] 0.4598495
+#
+# $majority$ari
+# [1] 0.4061217
+#
+#
+# $lce
+# $lce$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             multiclass     0.700
+# 2 kap                  multiclass     0.483
+# 3 sens                 macro          0.577
+# 4 spec                 macro          0.912
+# 5 ppv                  macro          0.588
+# 6 npv                  macro          0.890
+# 7 mcc                  multiclass     0.504
+# 8 j_index              macro          0.489
+# 9 bal_accuracy         macro          0.744
+# 10 detection_prevalence macro          0.2
+# 11 precision            macro          0.588
+# 12 recall               macro          0.577
+# 13 f_meas               macro          0.560
+#
+# $lce$nmi
+# [1] 0.4692405
+#
+# $lce$ari
+# [1] 0.4093116
+#
+#
+# $lca
+# $lca$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             multiclass     0.611
+# 2 kap                  multiclass     0.429
+# 3 sens                 macro          0.657
+# 4 spec                 macro          0.902
+# 5 ppv                  macro          0.579
+# 6 npv                  macro          0.877
+# 7 mcc                  multiclass     0.480
+# 8 j_index              macro          0.559
+# 9 bal_accuracy         macro          0.779
+# 10 detection_prevalence macro          0.2
+# 11 precision            macro          0.579
+# 12 recall               macro          0.657
+# 13 f_meas               macro          0.579
+#
+# $lca$nmi
+# [1] 0.4035596
+#
+# $lca$ari
+# [1] 0.2510463
+#
+# [1] "The Inf-FS2020 method selected 583 features."
 
 ############################
-# lymphoma
+# lymphoma TBC
 ############################
 data(lymphoma)
 
@@ -374,58 +345,6 @@ data <- lymphoma
 
 mean(data$x)
 sd(data$x)
-
-top_features <- cgufs_selection(data$x, k1=3,k2=3,quantile = 0.8)
-sprintf("The %s method selected %d features.", "cgufs", length(top_features))
-
-
-# Run dice
-dice.obj <- dice(
-  data =  data$x[,top_features],
-  nk = 3,
-  algorithms = c("km","cmeans"),
-  ref.cl = as.integer(data$y+1),
-  evaluate = TRUE,
-  progress = TRUE,
-  verbose = TRUE,
-
-)
-
-dice.obj$indices$ei
-
-
-
-# Run just once
-UFS_results_file <- "experiments/UFS_lymphoma_Inf-FS2020.RData"
-# UFS_results <- runUFS(data$x, UFS_Methods)
-# save(UFS_results, file = UFS_results_file)
-
-load(UFS_results_file)
-
-method = "Inf-FS2020"
-top_features <- UFS_results$Results[[method]]$Result[[3]]
-sprintf("The %s method selected %d features.", method, length(top_features))
-
-# Run dice
-dice.obj <- dice(
-  data =  data$x[, top_features],
-  nk = 3,
-  p.item = 1,
-  reps = 1,
-  algorithms = algorithms,
-  cons.funs = c("majority"),
-  ref.cl = as.integer(data$y+1),
-  evaluate = TRUE,
-  plot = FALSE,
-  progress = TRUE,
-  verbose = TRUE
-)
-
-dice.obj$indices$ei
-
-# SC 0.47753735 0.6935484
-# SOM   0.40328275 0.6935484
-
 
 ############################
 # prostate_ge
@@ -449,107 +368,122 @@ method = "Inf-FS2020"
 top_features <- UFS_results$Results[[method]]$Result[[3]]
 sprintf("The %s method selected %d features.", method, length(top_features))
 
+g <- 2
+B <- 100
+execution_time <- system.time(RPClu_results <- RPClu_parallel(data$x[, top_features],
+                                                              clust_fun = "km",
+                                                              g=g,
+                                                              B=B,
+                                                              verb=TRUE))["elapsed"]
 
-# Run dice
-dice.obj <- dice(
-  data =  data$x[, top_features],
-  nk = 2,
-  p.item = 1,
-  reps = 1,
-  algorithms = algorithms,
-  cons.funs = c("majority"),
-  ref.cl = as.integer(data$y),
-  evaluate = TRUE,
-  plot = FALSE,
-  progress = TRUE,
-  verbose = TRUE
-)
+E <- as.matrix(RPClu_results$clusterings)
 
-# External Metrics
-dice.obj$indices$ei
+external_metrics <- calculate_external_metrics(E,g, as.integer(data$y))
 
-# PAM_Euclidean 0.34553179 0.7843137
-# KM            0.21329961 0.7450980
-# AP            0.34553179 0.7843137
-# CMEANS        0.18426776 0.7450980
+external_metrics
 
-
-############################
-# COIL20
-############################
-data(COIL20)
-
-data <- COIL20
-
-mean(data$x)
-sd(data$x)
-
-# Run just once
-UFS_results_file <- "experiments/UFS_COIL20_Inf-FS2020.RData"
-# UFS_results <- runUFS(data$x, UFS_Methods)
-# save(UFS_results, file = UFS_results_file)
-
-load(UFS_results_file)
-
-method = "Inf-FS2020"
-top_features <- UFS_results$Results[[method]]$Result[[3]]
-sprintf("The %s method selected %d features.", method, length(top_features))
-
-# Run dice
-dice.obj <- dice(
-  data =  data$x[, top_features],
-  nk = 20,
-  reps = 1,
-  algorithms = algorithms,
-  cons.funs = c("majority"),
-  ref.cl = as.integer(data$y),
-  evaluate = TRUE,
-  plot = FALSE,
-  progress = TRUE,
-  verbose = TRUE
-)
-
-dice.obj$indices$ei
-# MEDIOCRES
-
-
-############################
-# warpAR10P
-############################
-
-data(warpAR10P)
-
-data <- warpAR10P
-
-data$x <- scale(data$x)
-
-mean(data$x)
-sd(data$x)
-
-# Run just once
-UFS_results_file <- "experiments/UFS_warpAR10P_Inf-FS2020.RData"
-UFS_results <- runUFS(data$x, UFS_Methods)
-save(UFS_results, file = UFS_results_file)
-
-load(UFS_results_file)
-
-
-############################
-# warpPIE10P
-############################
-
-data(warpPIE10P)
-
-data <- warpPIE10P
-
-data$x <- scale(data$x)
-
-mean(data$x)
-sd(data$x)
-
-# Run just once
-UFS_results_file <- "experiments/UFS_warpPIE10P_Inf-FS2020.RData"
-UFS_results <- runUFS(data$x, UFS_Methods)
-save(UFS_results, file = UFS_results_file)
-
-load(UFS_results_file)
+# > external_metrics
+# $kmodes
+# $kmodes$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             binary         0.716
+# 2 kap                  binary         0.429
+# 3 sens                 binary         0.62
+# 4 spec                 binary         0.808
+# 5 ppv                  binary         0.756
+# 6 npv                  binary         0.689
+# 7 mcc                  binary         0.436
+# 8 j_index              binary         0.428
+# 9 bal_accuracy         binary         0.714
+# 10 detection_prevalence binary         0.402
+# 11 precision            binary         0.756
+# 12 recall               binary         0.62
+# 13 f_meas               binary         0.681
+#
+# $kmodes$nmi
+# [1] 0.1444463
+#
+# $kmodes$ari
+# [1] 0.1782498
+#
+#
+# $majority
+# $majority$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             binary         0.569
+# 2 kap                  binary         0.127
+# 3 sens                 binary         0.26
+# 4 spec                 binary         0.865
+# 5 ppv                  binary         0.65
+# 6 npv                  binary         0.549
+# 7 mcc                  binary         0.158
+# 8 j_index              binary         0.125
+# 9 bal_accuracy         binary         0.563
+# 10 detection_prevalence binary         0.196
+# 11 precision            binary         0.65
+# 12 recall               binary         0.26
+# 13 f_meas               binary         0.371
+#
+# $majority$nmi
+# [1] 0.02151663
+#
+# $majority$ari
+# [1] 0.01253643
+#
+#
+# $lce
+# $lce$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             binary        0.569
+# 2 kap                  binary        0.123
+# 3 sens                 binary        0.14
+# 4 spec                 binary        0.981
+# 5 ppv                  binary        0.875
+# 6 npv                  binary        0.543
+# 7 mcc                  binary        0.225
+# 8 j_index              binary        0.121
+# 9 bal_accuracy         binary        0.560
+# 10 detection_prevalence binary        0.0784
+# 11 precision            binary        0.875
+# 12 recall               binary        0.14
+# 13 f_meas               binary        0.241
+#
+# $lce$nmi
+# [1] 0.06406633
+#
+# $lce$ari
+# [1] 0.01575351
+#
+#
+# $lca
+# $lca$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             binary         0.755
+# 2 kap                  binary         0.509
+# 3 sens                 binary         0.72
+# 4 spec                 binary         0.788
+# 5 ppv                  binary         0.766
+# 6 npv                  binary         0.745
+# 7 mcc                  binary         0.510
+# 8 j_index              binary         0.508
+# 9 bal_accuracy         binary         0.754
+# 10 detection_prevalence binary         0.461
+# 11 precision            binary         0.766
+# 12 recall               binary         0.72
+# 13 f_meas               binary         0.742
+#
+# $lca$nmi
+# [1] 0.1971804
+#
+# $lca$ari
+# [1] 0.2525461
+#
+# ] "The Inf-FS2020 method selected 949 features."
