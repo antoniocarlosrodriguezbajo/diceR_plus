@@ -1,4 +1,6 @@
 library(diceRplus)
+library(mclust)
+
 UFS_Methods <- list(
   "Inf-FS2020" = TRUE
 )
@@ -34,6 +36,38 @@ calculate_external_metrics <- function (E, k, ref_labels) {
   ))
 
   return(eval_results)
+}
+
+# Implementación simplificada del algoritmo CGUFS
+cgufs_selection <- function(data, k1=5, k2=5,quantile=0.75) {
+  # Paso 1: Agrupación de muestras
+  sample_clusters <- kmeans(data, centers=k1)$cluster
+
+  # Paso 2: Cálculo de importancia de características
+  feature_importance <- apply(data, 2, function(x) {
+    summary(aov(x ~ as.factor(sample_clusters)))[[1]][1,4]
+  })
+
+  # Paso 3: Selección adaptativa
+  selected_features <- which(feature_importance > quantile(feature_importance, quantile))
+  return(selected_features)
+}
+
+prepare_consensus_evaluation <- function(data,cluster_labels, alg_name="RPGMMClu") {
+  num_labels <- length(cluster_labels)
+
+  # Create structure for consensus_evaluate
+  cc_data <- array(cluster_labels, dim = c(num_labels, 1, 1, 1))
+  # row_names <- rownames(data)
+  row_names <- if (!is.null(rownames(data))) rownames(data) else seq_len(nrow(data))
+  dimnames(cc_data) <- list(
+    row_names,  # Primer nivel de nombres: nombres de las filas de Meat$x
+    "R1",       # Repetition
+    alg_name, # Clustering algorithm
+    "5"         # Number of clusters
+  )
+  # Structure
+  return(cc_data)
 }
 
 ############################
@@ -486,4 +520,279 @@ external_metrics
 # $lca$ari
 # [1] 0.2525461
 #
-# ] "The Inf-FS2020 method selected 949 features."
+
+############################
+# COIL20
+############################
+data(COIL20)
+
+data <- COIL20
+
+data$x <- scale(data$x)
+
+mean(data$x)
+sd(data$x)
+
+# Run just once
+UFS_results_file <- "experiments/UFS_COIL20_Inf-FS2020.RData"
+UFS_results <- runUFS(data$x, UFS_Methods)
+save(UFS_results, file = UFS_results_file)
+
+load(UFS_results_file)
+
+method = "Inf-FS2020"
+top_features <- UFS_results$Results[[method]]$Result[[3]]
+sprintf("The %s method selected %d features.", method, length(top_features))
+
+g <- 20
+B <- 100
+execution_time <- system.time(RPClu_results <- RPClu_parallel(data$x[, top_features],
+                                                              clust_fun = "km",
+                                                              g=g,
+                                                              B=B,
+                                                              verb=TRUE))["elapsed"]
+
+E <- as.matrix(RPClu_results$clusterings)
+
+external_metrics <- calculate_external_metrics(E,g, as.integer(data$y))
+
+external_metrics
+
+# [1] "The Inf-FS2020 method selected 175 features."
+#
+# $kmodes
+# $kmodes$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             multiclass     0.569
+# 2 kap                  multiclass     0.546
+# 3 sens                 macro          0.569
+# 4 spec                 macro          0.977
+# 5 ppv                  macro          0.553
+# 6 npv                  macro          0.978
+# 7 mcc                  multiclass     0.550
+# 8 j_index              macro          0.546
+# 9 bal_accuracy         macro          0.773
+# 10 detection_prevalence macro          0.05
+# 11 precision            macro          0.553
+# 12 recall               macro          0.569
+# 13 f_meas               macro          0.537
+#
+# $kmodes$nmi
+# [1] 0.6955416
+#
+# $kmodes$ari
+# [1] 0.4702302
+#
+#
+# $majority
+# $majority$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             multiclass     0.580
+# 2 kap                  multiclass     0.558
+# 3 sens                 macro          0.580
+# 4 spec                 macro          0.978
+# 5 ppv                  macro          0.583
+# 6 npv                  macro          0.978
+# 7 mcc                  multiclass     0.562
+# 8 j_index              macro          0.558
+# 9 bal_accuracy         macro          0.779
+# 10 detection_prevalence macro          0.05
+# 11 precision            macro          0.583
+# 12 recall               macro          0.580
+# 13 f_meas               macro          0.549
+#
+# $majority$nmi
+# [1] 0.7190488
+#
+# $majority$ari
+# [1] 0.4917776
+############################
+# warpAR10P
+############################
+
+data(warpAR10P)
+
+data <- warpAR10P
+
+data$x <- scale(data$x)
+
+mean(data$x)
+sd(data$x)
+
+# Run just once
+UFS_results_file <- "experiments/UFS_warpAR10P_Inf-FS2020.RData"
+UFS_results <- runUFS(data$x, UFS_Methods)
+save(UFS_results, file = UFS_results_file)
+
+load(UFS_results_file)
+
+method = "Inf-FS2020"
+top_features <- UFS_results$Results[[method]]$Result[[3]]
+sprintf("The %s method selected %d features.", method, length(top_features))
+
+g <- 10
+B <- 100
+execution_time <- system.time(RPClu_results <- RPClu_parallel(data$x[, top_features],
+                                                              clust_fun = "km",
+                                                              g=g,
+                                                              B=B,
+                                                              verb=TRUE))["elapsed"]
+
+E <- as.matrix(RPClu_results$clusterings)
+
+external_metrics <- calculate_external_metrics(E,g, as.integer(data$y))
+
+external_metrics
+
+
+############################
+# warpPIE10P
+############################
+
+data(warpPIE10P)
+
+data <- warpPIE10P
+
+data$x <- apply(data$x, 2, rescale)
+
+mean(data$x)
+sd(data$x)
+min(data$x)
+max(data$x)
+
+
+# Run just once
+UFS_results_file <- "experiments/UFS_warpPIE10P_Inf-FS2020.RData"
+# UFS_results <- runUFS(data$x, UFS_Methods)
+# save(UFS_results, file = UFS_results_file)
+#
+load(UFS_results_file)
+
+g <- 10
+B <- 20
+
+top_features <- UFS_results$Results[[method]]$Result[[3]]
+sprintf("The %s method selected %d features.", method, length(top_features))
+
+execution_time <- system.time(RPClu_results <- RPClu_parallel(data$x[, top_features],
+                                                              clust_fun = "gmm",
+                                                              g=g,
+                                                              B=B,
+                                                              verb=TRUE))["elapsed"]
+
+E <- as.matrix(RPClu_results$clusterings)
+
+external_metrics <- calculate_external_metrics(E,g, as.integer(data$y))
+
+print(external_metrics)
+
+# [1] "The Inf-FS2020 method selected 382 features."
+#
+#
+# $kmodes
+# $kmodes$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             multiclass     0.514
+# 2 kap                  multiclass     0.460
+# 3 sens                 macro          0.514
+# 4 spec                 macro          0.946
+# 5 ppv                  macro          0.562
+# 6 npv                  macro          0.947
+# 7 mcc                  multiclass     0.468
+# 8 j_index              macro          0.460
+# 9 bal_accuracy         macro          0.730
+# 10 detection_prevalence macro          0.1
+# 11 precision            macro          0.562
+# 12 recall               macro          0.514
+# 13 f_meas               macro          0.510
+#
+# $kmodes$nmi
+# [1] 0.6865815
+#
+# $kmodes$ari
+# [1] 0.4246193
+#
+#
+# $majority
+# $majority$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             multiclass     0.633
+# 2 kap                  multiclass     0.593
+# 3 sens                 macro          0.633
+# 4 spec                 macro          0.959
+# 5 ppv                  macro          0.679
+# 6 npv                  macro          0.960
+# 7 mcc                  multiclass     0.599
+# 8 j_index              macro          0.593
+# 9 bal_accuracy         macro          0.796
+# 10 detection_prevalence macro          0.1
+# 11 precision            macro          0.679
+# 12 recall               macro          0.633
+# 13 f_meas               macro          0.633
+#
+# $majority$nmi
+# [1] 0.7351729
+#
+# $majority$ari
+# [1] 0.5161567
+#
+#
+# $lce
+# $lce$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             multiclass     0.714
+# 2 kap                  multiclass     0.683
+# 3 sens                 macro          0.714
+# 4 spec                 macro          0.968
+# 5 ppv                  macro          0.796
+# 6 npv                  macro          0.968
+# 7 mcc                  multiclass     0.688
+# 8 j_index              macro          0.683
+# 9 bal_accuracy         macro          0.841
+# 10 detection_prevalence macro          0.1
+# 11 precision            macro          0.796
+# 12 recall               macro          0.714
+# 13 f_meas               macro          0.735
+#
+# $lce$nmi
+# [1] 0.7803953
+#
+# $lce$ari
+# [1] 0.5842485
+#
+#
+# $lca
+# $lca$confmat
+# # A tibble: 13 × 3
+# .metric              .estimator .estimate
+# <chr>                <chr>          <dbl>
+#   1 accuracy             multiclass     0.6
+# 2 kap                  multiclass     0.556
+# 3 sens                 macro          0.6
+# 4 spec                 macro          0.956
+# 5 ppv                  macro          0.668
+# 6 npv                  macro          0.956
+# 7 mcc                  multiclass     0.560
+# 8 j_index              macro          0.556
+# 9 bal_accuracy         macro          0.778
+# 10 detection_prevalence macro          0.1
+# 11 precision            macro          0.668
+# 12 recall               macro          0.6
+# 13 f_meas               macro          0.609
+#
+# $lca$nmi
+# [1] 0.7288964
+#
+# $lca$ari
+# [1] 0.4899206
+
