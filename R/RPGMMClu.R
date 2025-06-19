@@ -387,7 +387,7 @@ RPClu_parallel <- function(x,
     ari <- if (!is.null(true.cl)) adjustedRandIndex(clust, true.cl) else NA
 
     list(clustering = clust, ari = ari)
-  })
+  }, future.seed = seed)
   plan(sequential)
   gc()
 
@@ -396,7 +396,7 @@ RPClu_parallel <- function(x,
   ari_vec <- sapply(results, function(x) x$ari)
 
   # Returns clusterings and ARI
-  out <- list(clusterings = clustering_matrix, ari = ari_vec)
+  out <- list(clusterings = clustering_matrix)
   return(out)
 }
 
