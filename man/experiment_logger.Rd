@@ -7,16 +7,18 @@
 experiment_logger(
   description,
   dataset,
-  ensemble_method,
+  clustering_method,
+  clustering_method_params = list(NA),
+  ensemble_method = NA,
   ensemble_method_params = list(NA),
   UFS_method = "N/A",
   UFS_method_params = list(NA),
   num_features = NA,
-  features = NA,
+  features = list(NA),
   dim_reduction_method = "N/A",
   dim_reduction_method_params = list(NA),
   execution_time = NA,
-  labels_clustering,
+  labels_clustering = list(NA),
   internal_metrics = list(NA),
   external_metrics = list(NA)
 )
