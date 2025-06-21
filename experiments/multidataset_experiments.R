@@ -77,9 +77,13 @@ calculate_external_metrics <- function (consensus_labels, ref_labels, method = N
   return(eval_results)
 }
 
-run_RPClu_experiments <- function(data_all, top_features,
-                                  ref_labels, algorithms,
+run_RPClu_experiments <- function(data_all,
+                                  top_features,
+                                  ref_labels,
+                                  algorithms,
                                   B, k,
+                                  dataset = "Meat",
+                                  UFS_method = "Inf-FS2020",
                                   method = NULL,
                                   rp = TRUE,
                                   method_rp = "gaussian",
@@ -89,13 +93,14 @@ run_RPClu_experiments <- function(data_all, top_features,
   for (alg in algorithms) {
     print(alg)
     tryCatch({
-      execution_time = system.time(RPClu_results <- RPClu_parallel(data,
-                                                                    clust_fun = alg,
-                                                                    g = k,
-                                                                    B = B,
-                                                                   rp = rp,
-                                                                   method_rp = method_rp,
-                                                                   seed = seed))["elapsed"]
+      execution_time = system.time(RPClu_results <-
+                                     RPClu_parallel(data,
+                                                    clust_fun = alg,
+                                                    g = k,
+                                                    B = B,
+                                                    rp = rp,
+                                                    method_rp = method_rp,
+                                                    seed = seed))["elapsed"]
 
       E = as.matrix(RPClu_results$clusterings)
 
@@ -115,13 +120,21 @@ run_RPClu_experiments <- function(data_all, top_features,
                     con_method, ari_valor, nmi_valor, acc_valor))
 
         # Log the experiment
+        if (rp) {
+          description = paste0("Ensemble Clustering + ", UFS_method, " + RP + ",
+                               alg, " + " , con_method, " + " ,
+                               " seed ", as.character(seed))
+        } else {
+          description = paste0("Ensemble Clustering + ", UFS_method, " + NO RP + ",
+                               alg, " + " , con_method, " + " ,
+                               " seed ", as.character(seed))
+        }
         exp_data = experiment_logger(
-          description = paste0("Ensemble Clustering with Inf-FS2020 + RP +",
-                               alg,"+", con_method),
-          dataset = "Meat",
+          description = description,
+          dataset = dataset,
           clustering_method = alg,
           clustering_method_params = list(k = k, B = B),
-          UFS_method = "Inf-FS2020",
+          UFS_method = UFS_method,
           num_features = ncol(data),
           features = top_features,
           ensemble_method = con_method,
@@ -143,22 +156,6 @@ run_RPClu_experiments <- function(data_all, top_features,
     })
   }
   return(list(first = experiment_ids[1], last = tail(experiment_ids, 1)))
-}
-
-run_experiment_individual_algorithm <- function(data, ref_labels, algorithm, k) {
-  clustering_labels = consensus_cluster(data, nk = k,
-                                             reps = 1, p.item = 1,
-                                             algorithms = algorithm, progress = FALSE)
-  clustering_labels = relabel_class(clustering_labels, ref_labels)
-  clustering_labels = list(individual = clustering_labels)
-  external_metrics = calculate_external_metrics(clustering_labels, ref_labels)
-  con_method = "individual"
-  ari_valor = round(external_metrics[[con_method]]$ari, 4)
-  nmi_valor = round(external_metrics[[con_method]]$nmi, 4)
-  acc_valor = external_metrics[[con_method]]$confmat$.estimate[external_metrics[[con_method]]$confmat$.metric == "accuracy"]
-  acc_valor = round(acc_valor, 4)
-  cat(sprintf("%s: ARI:%.4f NMI:%.4f ACC:%.4f \n",
-              con_method, ari_valor, nmi_valor, acc_valor))
 }
 
 summarize_top_metrics <- function(experiments, top_n = 10) {
@@ -207,6 +204,31 @@ summarize_top_metrics <- function(experiments, top_n = 10) {
   return(top_summary)
 }
 
+evaluate_experiments <- function(first_id, n_reps) {
+  last_id <- first_id + n_reps - 1
+
+  all_experiments <- load_experiments()
+
+  filter_experiments <- all_experiments$experiment_id >= first_id &
+    all_experiments$experiment_id <= last_id
+
+  experiments_subset <- all_experiments[filter_experiments, ]
+
+  extract_metric <- function(metric_name) {
+    vals <- sapply(experiments_subset$external_metrics, function(x) x[[metric_name]])
+    list(mean = mean(vals, na.rm = TRUE), sd = sd(vals, na.rm = TRUE))
+  }
+
+  ari <- extract_metric("ari")
+  nmi <- extract_metric("nmi")
+  acc <- extract_metric("acc")
+
+  cat("Mean ARI:", round(ari$mean, 4), "| SD ARI:", round(ari$sd, 4), "\n")
+  cat("Mean NMI:", round(nmi$mean, 4), "| SD NMI:", round(nmi$sd, 4), "\n")
+  cat("Mean ACC:", round(acc$mean, 4), "| SD ACC:", round(acc$sd, 4), "\n")
+}
+
+
 
 ############################
 # Meat
@@ -217,6 +239,10 @@ data <- Meat
 
 mean(data$x)
 sd(data$x)
+
+##################
+# RP + Inf-FS2020
+##################
 
 # Run just once
 UFS_results_file <- "experiments/UFS_Meat_Inf-FS2020.RData"
@@ -234,11 +260,12 @@ B <- 10
 k <- 5
 
 seed <- 101
-experiments <- run_RPClu_experiments(data=data$x,
-                                     top_features,
+experiments <- run_RPClu_experiments(data_all=data$x,
+                                     top_features = top_features,
                                      ref_labels = as.integer(data$y),
                                      algorithms = algorithms,
                                      B=B, k=k,
+                                     dataset = "Meat",
                                      rp = TRUE,
                                      seed = seed)
 print(experiments)
@@ -250,62 +277,49 @@ print(top_ari)
 best_clustering <- top_ari$clustering_method[1]
 best_ensemble <- top_ari$ensemble_method[1]
 
-seed <- 101
 n_reps <- 20
-results <- lapply(1:n_reps, function(i) {
-  experiments <- run_RPClu_experiments(data = data$x,
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiments_rep <- run_RPClu_experiments(data = data$x,
                                        top_features = top_features,
                                        ref_labels = as.integer(data$y),
                                        algorithms = best_clustering,
                                        method = best_ensemble,
-                                       B = B,
-                                       k = k,
+                                       B = B, k = k,
+                                       dataset = "Meat",
                                        rp = TRUE,
-                                       seed = 100 + i)  # Change seed in each iteration
-  print(experiments$first)
-})
+                                       seed = seed)
+  print(experiments_rep$first)
+}
 
-first_id <- 298
-last_id <- 298 + n_reps - 1
-
-all_experiments <- load_experiments()
-
-filter_experiments <- all_experiments$experiment_id >= first_id &
-  all_experiments$experiment_id <= last_id
-
-experiments_subset <- all_experiments[filter_experiments, ]
-
-ari_vals <- sapply(experiments_subset$external_metrics, function(x) x$ari)
-mean_ari <- mean(ari_vals, na.rm = TRUE)
-sd_ari <- sd(ari_vals, na.rm = TRUE)
-cat("Mean ARI:", round(mean_ari, 4), "\n")
-cat("SD ARI:", round(sd_ari, 4), "\n")
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
 
 
 
-run_experiment_individual_algorithm(data = data$x,
-                                    ref_labels = as.integer(data$y),
-                                    algorithm = "gmm",
-                                    k=k
-                                    )
+####################
+# Inf-FS2020 (NO RP)
+####################
 
-run_experiment_individual_algorithm(data = data$x[, top_features],
-                                    ref_labels = as.integer(data$y),
-                                    algorithm = "gmm",
-                                    k=k
-)
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiments_rep <- run_RPClu_experiments(data = data$x,
+                                           top_features = top_features,
+                                           ref_labels = as.integer(data$y),
+                                           algorithms = "km",
+                                           method = best_ensemble,
+                                           B = B, k = k,
+                                           dataset = "Meat",
+                                           rp = FALSE,
+                                           seed = seed)
+  print(experiments_rep$first)
+}
 
-run_RPClu_experiments(data = data$x[, top_features],
-                      ref_labels = as.integer(data$y),
-                      algorithms = "gmm",
-                      B=B,
-                      k=k)
-
-
-
-
-
-
+set.seed(2333)
+cc <- consensus_cluster(data$x[,top_features], nk = 4, reps = 1, p.item = 1, algorithms = "km", progress = FALSE)
+ari <- adjustedRandIndex(cc, as.integer(data$y))
+cat("ARI:", round(ari, 7), "\n")
 
 ############################
 # ALLAML  TBC
