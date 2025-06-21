@@ -9,13 +9,13 @@ algorithms = c("nmf", "hc", "diana", "km", "pam", "ap", "sc",
                "gmm", "block", "som", "cmeans", "hdbscan")
 
 
-calculate_consensus_labels <- function (E, k, ref_labels) {
-
+calculate_consensus_labels <- function(E, k, ref_labels, method = NULL) {
+  # Reshape the input matrix E into a 4D array for methods that require it (e.g., CSPA)
   dims <- dim(E)
   E_4d <- array(E, dim = c(dims[1], dims[2], 1, 1))
   dimnames(E_4d) <- list(NULL, NULL, NULL, as.character(k))
 
-  # List of consensus methods and their specific arguments
+  # Define the list of available consensus methods and their parameters
   consensus_methods <- list(
     kmodes   = function(E) k_modes(E, is.relabelled = FALSE, seed = 1),
     majority = function(E) majority_voting(E, is.relabelled = FALSE),
@@ -24,20 +24,27 @@ calculate_consensus_labels <- function (E, k, ref_labels) {
     cspa     = function(E) CSPA(E_4d, k)
   )
 
-  # Apply each consensus method
-  consensus_labels = lapply(consensus_methods, function(f) f(E))
+  # If a specific method is provided, apply only that one
+  if (!is.null(method)) {
+    if (!method %in% names(consensus_methods)) {
+      stop("Unrecognized method: ", method)
+    }
+    consensus_labels <- list()
+    consensus_labels[[method]] <- consensus_methods[[method]](E)
+  } else {
+    # Otherwise, apply all available methods
+    consensus_labels <- lapply(consensus_methods, function(f) f(E))
+  }
 
-  # Relabel
-  aligned_labels = list(
-    kmodes   = relabel_class(consensus_labels$kmodes, ref_labels),
-    majority = relabel_class(consensus_labels$majority, ref_labels),
-    lce      = relabel_class(consensus_labels$lce, ref_labels),
-    lca      = relabel_class(consensus_labels$lca, ref_labels),
-    cspa     = relabel_class(consensus_labels$cspa, ref_labels)
+  # Relabel the consensus results to match the reference labels
+  aligned_labels <- lapply(names(consensus_labels), function(m) {
+    relabel_class(consensus_labels[[m]], ref_labels)
+  })
+  names(aligned_labels) <- names(consensus_labels)
 
-  )
   return(aligned_labels)
 }
+
 
 # Calcute internal_metrics based on consensus_evaluate of diceR
 calculate_internal_metrics <- function(data,cluster_labels) {
@@ -59,7 +66,7 @@ calculate_internal_metrics <- function(data,cluster_labels) {
   return(metrics_list)
 }
 
-calculate_external_metrics <- function (consensus_labels, ref_labels) {
+calculate_external_metrics <- function (consensus_labels, ref_labels, method = NULL) {
   # Evaluate results
   eval_results = lapply(consensus_labels, function(labels) list(
     confmat = ev_confmat(labels, ref_labels),
@@ -70,7 +77,13 @@ calculate_external_metrics <- function (consensus_labels, ref_labels) {
   return(eval_results)
 }
 
-run_RPClu_experiments <- function(data_all, top_features, ref_labels, algorithms, B, k) {
+run_RPClu_experiments <- function(data_all, top_features,
+                                  ref_labels, algorithms,
+                                  B, k,
+                                  method = NULL,
+                                  rp = TRUE,
+                                  method_rp = "gaussian",
+                                  seed = 101) {
   data <- data_all[,top_features]
   experiment_ids <- c()
   for (alg in algorithms) {
@@ -80,12 +93,14 @@ run_RPClu_experiments <- function(data_all, top_features, ref_labels, algorithms
                                                                     clust_fun = alg,
                                                                     g = k,
                                                                     B = B,
-                                                                    verb = TRUE))["elapsed"]
+                                                                   rp = rp,
+                                                                   method_rp = method_rp,
+                                                                   seed = seed))["elapsed"]
 
       E = as.matrix(RPClu_results$clusterings)
 
       if (B > 1) {
-        consensus_labels = calculate_consensus_labels(E, k, ref_labels)
+        consensus_labels = calculate_consensus_labels(E, k, ref_labels, method)
       } else {
         consensus_labels = list(individual = as.vector(E))
       }
@@ -127,7 +142,7 @@ run_RPClu_experiments <- function(data_all, top_features, ref_labels, algorithms
       message("Error: ", conditionMessage(e))
     })
   }
-  return(c(first = experiment_ids[1], last = tail(experiment_ids, 1)))
+  return(list(first = experiment_ids[1], last = tail(experiment_ids, 1)))
 }
 
 run_experiment_individual_algorithm <- function(data, ref_labels, algorithm, k) {
@@ -145,6 +160,53 @@ run_experiment_individual_algorithm <- function(data, ref_labels, algorithm, k) 
   cat(sprintf("%s: ARI:%.4f NMI:%.4f ACC:%.4f \n",
               con_method, ari_valor, nmi_valor, acc_valor))
 }
+
+summarize_top_metrics <- function(experiments, top_n = 10) {
+  # Load all saved experiments
+  experiments_data_all <- load_experiments()
+
+  # Filter to include only the experiments in the relevant ID range
+  experiment_filter <- experiments_data_all$experiment_id >= experiments$first &
+    experiments_data_all$experiment_id <= experiments$last
+  experiments_dataset <- experiments_data_all[experiment_filter, ]
+
+  # Extract external evaluation metrics
+  ari_vals <- sapply(experiments_dataset$external_metrics, function(x) x$ari)
+  nmi_vals <- sapply(experiments_dataset$external_metrics, function(x) x$nmi)
+  acc_vals <- sapply(experiments_dataset$external_metrics, function(x) x$acc)
+
+  # Get indices of top-N values for each metric
+  top_ari_idx <- order(ari_vals, decreasing = TRUE)[1:top_n]
+  top_nmi_idx <- order(nmi_vals, decreasing = TRUE)[1:top_n]
+  top_acc_idx <- order(acc_vals, decreasing = TRUE)[1:top_n]
+
+  # Build summary tables for each metric
+  top_ari <- data.frame(
+    metric = "ARI",
+    clustering_method = experiments_dataset$clustering_method[top_ari_idx],
+    ensemble_method = experiments_dataset$ensemble_method[top_ari_idx],
+    value = round(ari_vals[top_ari_idx], 4)
+  )
+
+  top_nmi <- data.frame(
+    metric = "NMI",
+    clustering_method = experiments_dataset$clustering_method[top_nmi_idx],
+    ensemble_method = experiments_dataset$ensemble_method[top_nmi_idx],
+    value = round(nmi_vals[top_nmi_idx], 4)
+  )
+
+  top_acc <- data.frame(
+    metric = "ACC",
+    clustering_method = experiments_dataset$clustering_method[top_acc_idx],
+    ensemble_method = experiments_dataset$ensemble_method[top_acc_idx],
+    value = round(acc_vals[top_acc_idx], 4)
+  )
+
+  # Combine all into one summary table
+  top_summary <- rbind(top_ari, top_nmi, top_acc)
+  return(top_summary)
+}
+
 
 ############################
 # Meat
@@ -171,39 +233,53 @@ sprintf("The %s method selected %d features.", method, length(top_features))
 B <- 10
 k <- 5
 
+seed <- 101
 experiments <- run_RPClu_experiments(data=data$x,
                                      top_features,
                                      ref_labels = as.integer(data$y),
                                      algorithms = algorithms,
-                                     B=B,
-                                     k=k)
+                                     B=B, k=k,
+                                     rp = TRUE,
+                                     seed = seed)
 print(experiments)
 
-experiments_data_all <- load_experiments()
+top_summary <- summarize_top_metrics(experiments, top_n = 10)
+top_ari <- subset(top_summary, metric == "ARI")
+print(top_ari)
 
-filter_meat <- experiments_data_all$experiment_id >= experiments[["first"]] &
-  experiments_data_all$experiment_id <= experiments[["last"]]
+best_clustering <- top_ari$clustering_method[1]
+best_ensemble <- top_ari$ensemble_method[1]
 
-experiments_meat <- experiments_data_all[filter_meat,]
+seed <- 101
+n_reps <- 20
+results <- lapply(1:n_reps, function(i) {
+  experiments <- run_RPClu_experiments(data = data$x,
+                                       top_features = top_features,
+                                       ref_labels = as.integer(data$y),
+                                       algorithms = best_clustering,
+                                       method = best_ensemble,
+                                       B = B,
+                                       k = k,
+                                       rp = TRUE,
+                                       seed = 100 + i)  # Change seed in each iteration
+  print(experiments$first)
+})
 
-# Extract ARI values
-ari_vals <- sapply(experiments_meat$external_metrics, function(x) x$ari)
+first_id <- 298
+last_id <- 298 + n_reps - 1
 
-# Get indices of the top 10 ARI scores
-top10_idx <- order(ari_vals, decreasing = TRUE)[1:10]
+all_experiments <- load_experiments()
 
-# Build the summary table
-top10_summary <- data.frame(
-  clustering_method = experiments_meat$clustering_method[top10_idx],
-  ensemble_method = experiments_meat$ensemble_method[top10_idx],
-  ari = round(ari_vals[top10_idx], 4)
-)
+filter_experiments <- all_experiments$experiment_id >= first_id &
+  all_experiments$experiment_id <= last_id
 
-print(top10_summary)
+experiments_subset <- all_experiments[filter_experiments, ]
 
-
-
-
+ari_vals <- sapply(experiments_subset$external_metrics, function(x) x$ari)
+mean_ari <- mean(ari_vals, na.rm = TRUE)
+sd_ari <- sd(ari_vals, na.rm = TRUE)
+cat("Mean ARI:", round(mean_ari, 4), "\n")
+cat("SD ARI:", round(sd_ari, 4), "\n")
 
 
 

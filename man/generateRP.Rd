@@ -2,27 +2,38 @@
 % Please edit documentation in R/generateRP.R
 \name{generateRP}
 \alias{generateRP}
-\title{Generation of random matrices}
+\title{Generation of random projection matrices}
 \usage{
-generateRP(p, d, B)
+generateRP(p, d, B = 1, method_rp = c("gaussian", "achlioptas"), s = 3)
 }
 \arguments{
-\item{p}{The original number of variables.}
+\item{p}{The original number of variables (input dimension).}
 
-\item{d}{The reduced dimension.}
+\item{d}{The reduced target dimension.}
 
-\item{B}{The number of projections.}
+\item{B}{The number of projections to generate (default is 1).}
+
+\item{method_rp}{Character string indicating the type of random projection: \code{"gaussian"} for Haar-orthonormal projection matrices, or \code{"achlioptas"} for sparse projections (default is \code{"gaussian"}).}
+
+\item{s}{Sparsity parameter used in the \code{"achlioptas"} method. Larger values yield sparser matrices (default is 3).}
 }
 \value{
-A single matrix of dimension \code{p} by \code{d*B} containing \code{B} random matrices of dimension \code{p} by \code{d}.
+A numeric matrix of size \code{p} by \code{d * B}, containing \code{B} random projection matrices concatenated column-wise.
 }
 \description{
-This function generates \code{B} random matrices of dimension \code{p} by \code{d} by using the Haar measure.
+This function generates \code{B} random projection matrices of dimension \code{p} by \code{d}, either using orthonormal columns from the Haar measure (via Gaussian QR decomposition), or using sparse Achlioptas-type projections.
 }
 \examples{
-R<-generateRP(p=100,d=2,B=10)
-dim(R)
+# Generate 10 Gaussian orthonormal projection matrices
+G <- generateRP(p = 100, d = 5, B = 10, method_rp = "gaussian")
+dim(G)
+
+# Generate 5 sparse Achlioptas-type projection matrices with default sparsity
+A <- generateRP(p = 100, d = 5, B = 5, method_rp = "achlioptas", s = 3)
+dim(A)
+
 }
 \references{
-Anderlucci, Fortunato, Montanari (2019) \url{arXiv:1909.10832}
+Anderlucci, L., Fortunato, L., & Montanari, A. (2019). A general framework for dimension reduction in multivariate and functional data. \emph{arXiv preprint} arXiv:1909.10832.
+Achlioptas, D. (2003). Database-friendly random projections: Johnson–Lindenstrauss with binary coins. \emph{J. Comput. System Sci.}, 66(4), 671–687.
 }

@@ -12,8 +12,9 @@ RPClu_parallel(
   c = 10,
   B = 100,
   true.cl = NULL,
-  seed = 101,
-  verb = FALSE
+  rp = TRUE,
+  method_rp = "gaussian",
+  seed = 101
 )
 }
 \arguments{
@@ -31,8 +32,6 @@ RPClu_parallel(
 
 \item{seed}{A single value indicating the initializing seed for random generations.}
 
-\item{verb}{A logical controlling if the progress number of projections is displayed during the fitting procedure. By default is \code{FALSE}.}
-
 \item{B.star}{The number of \emph{base} models to retain in the final ensemble; the default is 100.}
 
 \item{modelNames}{A vector of character strings indicating the models to be fitted in the EM phase of the GMM. The help file for \link[mclust]{Mclust} describes the available options.}
@@ -40,6 +39,8 @@ RPClu_parallel(
 \item{diagonal}{A logical value indicating whether the conditional covariate matrix has a restricted form, i.e. it is diagonal. The default is FALSE.}
 
 \item{ensmethod}{A character string specifying the method for computing the clustering consensus. See the \link[clue]{cl_consensus} help file for available options. The default is \code{DWH}.}
+
+\item{verb}{A logical controlling if the progress number of projections is displayed during the fitting procedure. By default is \code{FALSE}.}
 }
 \value{
 The output components are as follows:

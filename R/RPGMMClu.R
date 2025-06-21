@@ -356,53 +356,53 @@ RPGMMClu_noens_parallel <- function(x, true.cl=NULL, g, d = NULL, c = 10, B = 10
 
 RPClu_parallel <- function(x,
                            g,
-                           clust_fun="gmm",
+                           clust_fun = "gmm",
                            d = NULL,
                            c = 10,
                            B = 100,
                            true.cl = NULL,
-                           seed = 101,
-                           verb = FALSE) {
+                           rp = TRUE,
+                           method_rp = "gaussian",
+                           seed = 101) {
 
   options(future.globals.maxSize = 1 * 16 * 1024^3)  # 1 GB
-
   p <- ncol(x)
-  if(is.null(d)) d <- ceiling(c * log(g))
+  if (is.null(d)) d <- ceiling(c * log(g))
   n <- nrow(x)
 
   set.seed(seed)
-  RPbase <- generateRP(p=ncol(x), d=d, B=B)
-  index <- matrix(1:(d*B), d, B)
+
+  if (rp) {
+    RPbase <- generateRP(p = p, d = d, B = B, method_rp = method_rp)
+    index <- matrix(1:(d * B), d, B)
+  }
 
   plan(cluster, workers = round(availableCores() * 0.8))
 
   results <- future_lapply(1:B, function(b) {
-    A <- as.matrix(RPbase[, index[, b]])
-    y <- x %*% A
+    y <- if (rp) {
+      A <- as.matrix(RPbase[, index[, b]])
+      x %*% A
+    } else {
+      x
+    }
 
     # Clustering
-    # clust <- clust_fun(y, g)$classification
     cc <- consensus_cluster(y, nk = g, reps = 1, p.item = 1, algorithms = clust_fun, progress = FALSE)
     clust <- cc[, 1, 1, 1]
     ari <- if (!is.null(true.cl)) adjustedRandIndex(clust, true.cl) else NA
 
     list(clustering = clust, ari = ari)
   }, future.seed = seed)
+
   plan(sequential)
   gc()
 
-  # Matriz n x B clusterings
   clustering_matrix <- do.call(cbind, lapply(results, function(x) x$clustering))
   ari_vec <- sapply(results, function(x) x$ari)
 
-  # Returns clusterings and ARI
-  out <- list(clusterings = clustering_matrix)
-  return(out)
+  return(list(clusterings = clustering_matrix))
 }
-
-
-
-
 
 
 
