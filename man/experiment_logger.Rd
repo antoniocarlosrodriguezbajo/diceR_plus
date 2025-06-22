@@ -9,8 +9,8 @@ experiment_logger(
   dataset,
   clustering_method,
   clustering_method_params = list(),
-  ensemble_method = NA,
-  ensemble_method_params = list(),
+  consensus_method = NA,
+  consensus_method_params = list(),
   UFS_method = "N/A",
   UFS_method_params = list(),
   num_features = NA,
@@ -28,9 +28,9 @@ experiment_logger(
 
 \item{dataset}{Character, name of the dataset.}
 
-\item{ensemble_method}{Character, ensemble clustering method.}
+\item{consensus_method}{Character, consensus clustering method.}
 
-\item{ensemble_method_params}{List, parameters of the ensemble clustering method.}
+\item{consensus_method_params}{List, parameters of the consensus clustering method.}
 
 \item{UFS_method}{Character, unsupervised feature selection method.}
 

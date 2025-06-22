@@ -20,8 +20,8 @@ generate_experiment_id <- function(file = "experiments/experiment_results.rds") 
 #'
 #' @param description Character, description of experiment.
 #' @param dataset Character, name of the dataset.
-#' @param ensemble_method Character, ensemble clustering method.
-#' @param ensemble_method_params List, parameters of the ensemble clustering method.
+#' @param consensus_method Character, consensus clustering method.
+#' @param consensus_method_params List, parameters of the consensus clustering method.
 #' @param UFS_method Character, unsupervised feature selection method.
 #' @param UFS_method_params List, parameters of the unsupervised feature selection method.
 #' @param num_features Integer, number of features selected.
@@ -39,8 +39,8 @@ experiment_logger <- function(description,
                                    dataset,
                                    clustering_method,
                                    clustering_method_params = list(),
-                                   ensemble_method = NA,
-                                   ensemble_method_params = list(),
+                                   consensus_method = NA,
+                                   consensus_method_params = list(),
                                    UFS_method = "N/A",
                                    UFS_method_params = list(),
                                    num_features = NA,
@@ -57,8 +57,8 @@ experiment_logger <- function(description,
     dataset = dataset,
     clustering_method = clustering_method,
     clustering_method_params = I(list(clustering_method_params)),
-    ensemble_method = ensemble_method,
-    ensemble_method_params = I(list(ensemble_method_params)),
+    consensus_method = consensus_method,
+    consensus_method_params = I(list(consensus_method_params)),
     UFS_method = UFS_method,
     UFS_method_params = I(list(UFS_method_params)),
     num_features = num_features,
