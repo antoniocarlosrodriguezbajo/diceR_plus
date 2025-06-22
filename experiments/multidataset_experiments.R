@@ -1,5 +1,6 @@
 library(diceRplus)
 library(mclust)
+library(scales)
 
 UFS_Methods <- list(
   "Inf-FS2020" = TRUE
@@ -298,9 +299,12 @@ evaluate_experiments <- function(first_id, n_reps) {
 
 
 
-############################
+########################################################
+########################################################
 # Meat
-############################
+########################################################
+########################################################
+
 data(Meat)
 
 data <- Meat
@@ -472,30 +476,22 @@ evaluate_experiments(experiments$last + 1,
 experiments$last <- experiments$last + 1 + n_reps - 1
 
 
-############################
-# ALLAML  TBC
-############################
-data(ALLAML)
-
-data <- ALLAML
-
-mean(data$x)
-sd(data$x)
-
-############################
-# leukemia TBC
-############################
-
-
-############################
+########################################################
+########################################################
 # lung_cancer
-############################
+########################################################
+########################################################
+
 data(lung_cancer)
 
 data <- lung_cancer
 
 mean(data$x)
 sd(data$x)
+
+##################
+# Inf-FS2020 + RP
+##################
 
 # Run just once
 UFS_results_file <- "experiments/UFS_lung_cancer_Inf-FS2020.RData"
@@ -508,65 +504,545 @@ method = "Inf-FS2020"
 top_features <- UFS_results$Results[[method]]$Result[[3]]
 sprintf("The %s method selected %d features.", method, length(top_features))
 
+# The Inf-FS2020 method selected 583 features.
 
-B <- 50
+B <- 60
 k <- 5
 
-run_RPClu_experiments(data=data$x[, top_features],
-                      ref_labels = as.integer(data$y),
-                      algorithms = algorithms,
-                      B=B,
-                      k=k)
+seed <- 101
+experiments <- run_RPClu_experiments(data_all=data$x,
+                                     top_features = top_features,
+                                     ref_labels = as.integer(data$y),
+                                     algorithms = algorithms,
+                                     B=B, k=k,
+                                     dataset = "Lung Cancer",
+                                     UFS_method = "Inf-FS2020",
+                                     rp = TRUE,
+                                     seed = seed)
+print(experiments)
+
+# 378-427 #
+top_summary <- summarize_top_metrics(experiments, top_n = 10)
+top_ari <- subset(top_summary, metric == "ARI")
+print(top_ari)
+
+# metric clustering_method consensus_method  value
+# 1     ARI               gmm         majority 0.4101
+# 2     ARI               gmm           kmodes 0.3828
+# 3     ARI               som              LCE 0.3380
+# 4     ARI               som             CSPA 0.3380
+# 5     ARI               gmm              LCE 0.3142
+# 6     ARI                hc              LCA 0.2865
+# 7     ARI               som         majority 0.2847
+# 8     ARI                hc           kmodes 0.2798
+# 9     ARI                hc              LCE 0.2575
+# 10    ARI               gmm             CSPA 0.2556
 
 
+best_clustering <- top_ari$clustering_method[1]
+best_consensus <- top_ari$consensus_method[1]
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiments_rep <- run_RPClu_experiments(data_all = data$x,
+                                           top_features = top_features,
+                                           ref_labels = as.integer(data$y),
+                                           algorithms = best_clustering,
+                                           consensus_method = best_consensus,
+                                           B = B, k = k,
+                                           dataset = "Lung Cancer",
+                                           UFS_method = "Inf-FS2020",
+                                           rp = TRUE,
+                                           seed = seed)
+  print(experiments_rep$first)
+}
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+
+# 428-447 #
+# Mean ARI: 0.3303 | SD ARI: 0.0604
+# Mean NMI: 0.4294 | SD NMI: 0.0521
+# Mean ACC: 0.6532 | SD ACC: 0.0492
+
+experiments$last <- experiments$last + 1 + n_reps - 1
+
+################################
+# GMM + RP All features (No UFS)
+################################
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiments_rep <- run_RPClu_experiments(data_all = data$x,
+                                           top_features = NULL,
+                                           ref_labels = as.integer(data$y),
+                                           algorithms = best_clustering,
+                                           consensus_method = best_consensus,
+                                           B = B, k = k,
+                                           dataset = "Lung Cancer",
+                                           UFS_method = "No UFS",
+                                           rp = TRUE,
+                                           seed = seed)
+  print(experiments_rep$first)
+}
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+
+# 448-467 #
+# Mean ARI: 0.3476 | SD ARI: 0.0533
+# Mean NMI: 0.507 | SD NMI: 0.036
+# Mean ACC: 0.6185 | SD ACC: 0.0322
+
+experiments$last <- experiments$last + 1 + n_reps - 1
+
+###########################
+# Inf-FS2020 + GMM (No RP)
+###########################
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiment_id <- run_clustering_experiments(data_all = data$x,
+                                              top_features = top_features,
+                                              ref_labels = as.integer(data$y),
+                                              algorithms = best_clustering,
+                                              consensus_method = best_consensus,
+                                              k = k,
+                                              dataset = "Lung Cancer",
+                                              UFS_method = "Inf-FS2020",
+                                              seed = seed)
+  print(experiment_id)
+}
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+
+# 468-487 #
+# Mean ARI: 0.5612 | SD ARI: 0.1253
+# Mean NMI: 0.5363 | SD NMI: 0.0774
+# Mean ACC: 0.7776 | SD ACC: 0.0597
+
+experiments$last <- experiments$last + 1 + n_reps - 1
+
+#################################
+# GMM All features (No RP, NO UFS)
+#################################
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiment_id <- run_clustering_experiments(data_all = data$x,
+                                              top_features = NULL,
+                                              ref_labels = as.integer(data$y),
+                                              algorithms = best_clustering,
+                                              consensus_method = best_consensus,
+                                              k = k,
+                                              dataset = "Lung Cancer",
+                                              UFS_method = "No UFS",
+                                              seed = seed)
+  print(experiment_id)
+}
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+
+# 488-507 #
+# Mean ARI: 0.7266 | SD ARI: 0.0839
+# Mean NMI: 0.7187 | SD NMI: 0.0561
+# Mean ACC: 0.8722 | SD ACC: 0.0535
+
+experiments$last <- experiments$last + 1 + n_reps - 1
 
 
+########################################################
+########################################################
+# prostate_ge
+########################################################
+########################################################
 
+data(prostate_ge)
 
+data <- prostate_ge
 
-
-
-
-
-
-
-
+mean(data$x)
+sd(data$x)
 
 ##################
-for (alg in algorithms) {
-  print(alg)
-  tryCatch({
-    execution_time <- system.time(RPClu_results <- RPClu_parallel(data$x[, top_features],
-                                                                  clust_fun = alg,
-                                                                  g = k,
-                                                                  B = B,
-                                                                  verb = TRUE))["elapsed"]
+# Inf-FS2020 + RP
+##################
 
-    E <- as.matrix(RPClu_results$clusterings)
-    ref_labels <- as.integer(data$y)
+# Run just once
+UFS_results_file <- "experiments/UFS_prostate_ge_Inf-FS2020.RData"
+# UFS_results <- runUFS(data$x, UFS_Methods)
+# save(UFS_results, file = UFS_results_file)
 
-    if (B > 1) {
-      consensus_labels <- calculate_consensus_labels(E, k, ref_labels)
-    } else {
-      consensus_labels <- list(unitary = as.vector(E))
-    }
+load(UFS_results_file)
 
-    external_metrics <- calculate_external_metrics(consensus_labels, ref_labels)
-    for (con_method in names(external_metrics)) {
-      ari_valor <- round(external_metrics[[con_method]]$ari, 4)
-      nmi_valor <- round(external_metrics[[con_method]]$nmi, 4)
-      acc_valor <- external_metrics[[con_method]]$confmat$.estimate[external_metrics[[con_method]]$confmat$.metric == "accuracy"]
-      acc_valor <- round(acc_valor, 4)
-      cat(sprintf("%s: ARI:%.4f NMI:%.4f ACC:%.4f \n",
-                  con_method, ari_valor, nmi_valor, acc_valor))
-    }
+method = "Inf-FS2020"
+top_features <- UFS_results$Results[[method]]$Result[[3]]
+sprintf("The %s method selected %d features.", method, length(top_features))
 
-    external_metrics$kmodes$nmi
-    external_metrics$kmodes$ari
-    external_metrics$kmodes$confmat$.estimate[external_metrics$kmodes$confmat$.metric == "accuracy"]
-  },
-  error = function(e) {
-    message("Error: ", conditionMessage(e))
-    NA
-  })
+# The Inf-FS2020 method selected 949 features
+
+B <- 100
+k <- 2
+
+seed <- 101
+experiments <- run_RPClu_experiments(data_all=data$x,
+                                     top_features = top_features,
+                                     ref_labels = as.integer(data$y),
+                                     algorithms = algorithms,
+                                     B=B, k=k,
+                                     dataset = "Prostate GE",
+                                     UFS_method = "Inf-FS2020",
+                                     rp = TRUE,
+                                     seed = seed)
+print(experiments)
+
+top_summary <- summarize_top_metrics(experiments, top_n = 10)
+top_acc <- subset(top_summary, metric == "ACC")
+print(top_acc)
+
+# 508-557 #
+
+# metric clustering_method consensus_method  value
+# 21    ACC               pam              LCE 0.8137
+# 22    ACC                ap           kmodes 0.8039
+# 23    ACC            cmeans              LCE 0.8039
+# 24    ACC                ap              LCE 0.7941
+# 25    ACC                ap              LCA 0.7941
+# 26    ACC               pam         majority 0.7843
+# 27    ACC               pam              LCA 0.7843
+# 28    ACC               pam             CSPA 0.7843
+# 29    ACC                km           kmodes 0.7745
+# 30    ACC               pam           kmodes 0.7745
+
+
+best_clustering <- top_acc$clustering_method[1]
+best_consensus <- top_acc$consensus_method[1]
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiments_rep <- run_RPClu_experiments(data_all = data$x,
+                                           top_features = top_features,
+                                           ref_labels = as.integer(data$y),
+                                           algorithms = best_clustering,
+                                           consensus_method = best_consensus,
+                                           B = B, k = k,
+                                           dataset = "Prostate GE",
+                                           UFS_method = "Inf-FS2020",
+                                           rp = TRUE,
+                                           seed = seed)
+  print(experiments_rep$first)
 }
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+# 558-577 #
+# Mean ARI: 0.1867 | SD ARI: 0.1735
+# Mean NMI: 0.1846 | SD NMI: 0.1171
+# Mean ACC: 0.6887 | SD ACC: 0.1137
+
+experiments$last <- experiments$last + 1 + n_reps - 1
+
+################################
+# PAM + RP All features (No UFS)
+################################
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiments_rep <- run_RPClu_experiments(data_all = data$x,
+                                           top_features = NULL,
+                                           ref_labels = as.integer(data$y),
+                                           algorithms = best_clustering,
+                                           consensus_method = best_consensus,
+                                           B = B, k = k,
+                                           dataset = "Prostate GE",
+                                           UFS_method = "No UFS",
+                                           rp = TRUE,
+                                           seed = seed)
+  print(experiments_rep$first)
+}
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+
+# 578-597 #
+# Mean ARI: 0.0165 | SD ARI: 0.0076
+# Mean NMI: 0.0195 | SD NMI: 0.0069
+# Mean ACC: 0.5794 | SD ACC: 0.0105
+
+experiments$last <- experiments$last + 1 + n_reps - 1
+
+###########################
+# Inf-FS2020 + PAM (No RP)
+###########################
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiment_id <- run_clustering_experiments(data_all = data$x,
+                                              top_features = top_features,
+                                              ref_labels = as.integer(data$y),
+                                              algorithms = best_clustering,
+                                              consensus_method = best_consensus,
+                                              k = k,
+                                              dataset = "Prostate GE",
+                                              UFS_method = "Inf-FS2020",
+                                              seed = seed)
+  print(experiment_id)
+}
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+# 598-617 #
+# Mean ARI: 0.3114 | SD ARI: 0.0233
+# Mean NMI: 0.3347 | SD NMI: 0.0298
+# Mean ACC: 0.7814 | SD ACC: 0.0106
+
+experiments$last <- experiments$last + 1 + n_reps - 1
+
+#################################
+# PAM All features (No RP, NO UFS)
+#################################
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiment_id <- run_clustering_experiments(data_all = data$x,
+                                              top_features = NULL,
+                                              ref_labels = as.integer(data$y),
+                                              algorithms = best_clustering,
+                                              consensus_method = best_consensus,
+                                              k = k,
+                                              dataset = "Prostate GE",
+                                              UFS_method = "No UFS",
+                                              seed = seed)
+  print(experiment_id)
+}
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+
+# 618-637 #
+# Mean ARI: 0.0189 | SD ARI: 0.0117
+# Mean NMI: 0.0245 | SD NMI: 0.0158
+# Mean ACC: 0.5813 | SD ACC: 0.0156
+
+experiments$last <- experiments$last + 1 + n_reps - 1
+
+
+
+########################################################
+########################################################
+# warpPIE10P
+########################################################
+########################################################
+
+data(warpPIE10P)
+
+data <- warpPIE10P
+
+mean(data$x)
+sd(data$x)
+
+data$x <- apply(data$x, 2, rescale)
+
+mean(data$x)
+sd(data$x)
+min(data$x)
+max(data$x)
+
+##################
+# Inf-FS2020 + RP
+##################
+
+# Run just once
+UFS_results_file <- "experiments/UFS_warpPIE10P_Inf-FS2020.RData"
+# UFS_results <- runUFS(data$x, UFS_Methods)
+# save(UFS_results, file = UFS_results_file)
+#
+load(UFS_results_file)
+method = "Inf-FS2020"
+top_features <- UFS_results$Results[[method]]$Result[[3]]
+sprintf("The %s method selected %d features.", method, length(top_features))
+# "The Inf-FS2020 method selected 382 features."
+
+k <- 10
+B <- 20
+
+seed <- 101
+experiments <- run_RPClu_experiments(data_all=data$x,
+                                     top_features = top_features,
+                                     ref_labels = as.integer(data$y),
+                                     algorithms = algorithms,
+                                     B=B, k=k,
+                                     dataset = "warpPIE10P",
+                                     UFS_method = "Inf-FS2020",
+                                     rp = TRUE,
+                                     seed = seed)
+print(experiments)
+
+top_summary <- summarize_top_metrics(experiments, top_n = 10)
+top_acc <- subset(top_summary, metric == "ACC")
+print(top_acc)
+
+# 638-682 #
+# metric clustering_method consensus_method  value
+# 21    ACC               gmm              LCE 0.7143
+# 22    ACC               gmm             CSPA 0.7095
+# 23    ACC               gmm              LCA 0.6905
+# 24    ACC               gmm         majority 0.6286
+# 25    ACC               nmf              LCA 0.6000
+# 26    ACC               nmf             CSPA 0.5857
+# 27    ACC               nmf         majority 0.5619
+# 28    ACC               pam         majority 0.5333
+# 29    ACC               nmf              LCE 0.5190
+# 30    ACC               gmm           kmodes 0.5190
+
+
+best_clustering <- top_acc$clustering_method[1]
+best_consensus <- top_acc$consensus_method[1]
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiments_rep <- run_RPClu_experiments(data_all = data$x,
+                                           top_features = top_features,
+                                           ref_labels = as.integer(data$y),
+                                           algorithms = best_clustering,
+                                           consensus_method = best_consensus,
+                                           B = B, k = k,
+                                           dataset = "warpPIE10P",
+                                           UFS_method = "Inf-FS2020",
+                                           rp = TRUE,
+                                           seed = seed)
+  print(experiments_rep$first)
+}
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+
+
+# 683-702 #
+# Mean ARI: 0.5616 | SD ARI: 0.0431
+# Mean NMI: 0.7756 | SD NMI: 0.0241
+# Mean ACC: 0.6879 | SD ACC: 0.0435
+
+experiments$last <- experiments$last + 1 + n_reps - 1
+
+
+################################
+# GMM + RP All features (No UFS)
+################################
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiments_rep <- run_RPClu_experiments(data_all = data$x,
+                                           top_features = NULL,
+                                           ref_labels = as.integer(data$y),
+                                           algorithms = best_clustering,
+                                           consensus_method = best_consensus,
+                                           B = B, k = k,
+                                           dataset = "warpPIE10P",
+                                           UFS_method = "No UFS",
+                                           rp = TRUE,
+                                           seed = seed)
+  print(experiments_rep$first)
+}
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+
+# 703-722 #
+# Mean ARI: 0.2496 | SD ARI: 0.03
+# Mean NMI: 0.551 | SD NMI: 0.0253
+# Mean ACC: 0.4157 | SD ACC: 0.0273
+
+experiments$last <- experiments$last + 1 + n_reps - 1
+
+###########################
+# Inf-FS2020 + GMM (No RP)
+###########################
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiment_id <- run_clustering_experiments(data_all = data$x,
+                                              top_features = top_features,
+                                              ref_labels = as.integer(data$y),
+                                              algorithms = best_clustering,
+                                              consensus_method = best_consensus,
+                                              k = k,
+                                              dataset = "warpPIE10P",
+                                              UFS_method = "Inf-FS2020",
+                                              seed = seed)
+  print(experiment_id)
+}
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+
+# 723-742 #
+
+experiments$last <- experiments$last + 1 + n_reps - 1
+
+#################################
+# PAM All features (No RP, NO UFS)
+#################################
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiment_id <- run_clustering_experiments(data_all = data$x,
+                                              top_features = NULL,
+                                              ref_labels = as.integer(data$y),
+                                              algorithms = best_clustering,
+                                              consensus_method = best_consensus,
+                                              k = k,
+                                              dataset = "warpPIE10P",
+                                              UFS_method = "No UFS",
+                                              seed = seed)
+  print(experiment_id)
+}
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+
+# 743-762 #
+# Mean ARI: 0.1276 | SD ARI: 0.0359
+# Mean NMI: 0.3645 | SD NMI: 0.0356
+# Mean ACC: 0.3121 | SD ACC: 0.0318
+
+
+experiments$last <- experiments$last + 1 + n_reps - 1
