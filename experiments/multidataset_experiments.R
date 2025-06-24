@@ -1012,11 +1012,14 @@ evaluate_experiments(experiments$last + 1,
                      experiments$last + 1 + n_reps - 1)
 
 # 723-742 #
+# Mean ARI:0.1173 | SD ARI:0.1888
+# Mean NMI:0.2161 | SD NMI:0.2722
+# Mean ACC:0.5585 | SD ACC:0.1228
 
 experiments$last <- experiments$last + 1 + n_reps - 1
 
 #################################
-# PAM All features (No RP, NO UFS)
+# GMM All features (No RP, NO UFS)
 #################################
 
 ## Repetitions of best clustering and best consensus
@@ -1044,5 +1047,429 @@ evaluate_experiments(experiments$last + 1,
 # Mean NMI: 0.3645 | SD NMI: 0.0356
 # Mean ACC: 0.3121 | SD ACC: 0.0318
 
+experiments$last <- experiments$last + 1 + n_reps - 1
+
+
+########################################################
+########################################################
+# warpPIE10P
+########################################################
+########################################################
+
+data(warpPIE10P)
+
+data <- warpPIE10P
+
+mean(data$x)
+sd(data$x)
+
+data$x <- apply(data$x, 2, rescale)
+
+mean(data$x)
+sd(data$x)
+min(data$x)
+max(data$x)
+
+##################
+# Inf-FS2020 + RP
+##################
+
+# Run just once
+UFS_results_file <- "experiments/UFS_warpPIE10P_Inf-FS2020.RData"
+# UFS_results <- runUFS(data$x, UFS_Methods)
+# save(UFS_results, file = UFS_results_file)
+#
+load(UFS_results_file)
+method = "Inf-FS2020"
+top_features <- UFS_results$Results[[method]]$Result[[3]]
+sprintf("The %s method selected %d features.", method, length(top_features))
+# "The Inf-FS2020 method selected 382 features."
+
+k <- 10
+B <- 20
+
+seed <- 101
+experiments <- run_RPClu_experiments(data_all=data$x,
+                                     top_features = top_features,
+                                     ref_labels = as.integer(data$y),
+                                     algorithms = algorithms,
+                                     B=B, k=k,
+                                     dataset = "warpPIE10P",
+                                     UFS_method = "Inf-FS2020",
+                                     rp = TRUE,
+                                     seed = seed)
+print(experiments)
+
+top_summary <- summarize_top_metrics(experiments, top_n = 10)
+top_acc <- subset(top_summary, metric == "ACC")
+print(top_acc)
+
+# 638-682 #
+# metric clustering_method consensus_method  value
+# 21    ACC               gmm              LCE 0.7143
+# 22    ACC               gmm             CSPA 0.7095
+# 23    ACC               gmm              LCA 0.6905
+# 24    ACC               gmm         majority 0.6286
+# 25    ACC               nmf              LCA 0.6000
+# 26    ACC               nmf             CSPA 0.5857
+# 27    ACC               nmf         majority 0.5619
+# 28    ACC               pam         majority 0.5333
+# 29    ACC               nmf              LCE 0.5190
+# 30    ACC               gmm           kmodes 0.5190
+
+
+best_clustering <- top_acc$clustering_method[1]
+best_consensus <- top_acc$consensus_method[1]
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiments_rep <- run_RPClu_experiments(data_all = data$x,
+                                           top_features = top_features,
+                                           ref_labels = as.integer(data$y),
+                                           algorithms = best_clustering,
+                                           consensus_method = best_consensus,
+                                           B = B, k = k,
+                                           dataset = "warpPIE10P",
+                                           UFS_method = "Inf-FS2020",
+                                           rp = TRUE,
+                                           seed = seed)
+  print(experiments_rep$first)
+}
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+
+
+# 683-702 #
+# Mean ARI: 0.5616 | SD ARI: 0.0431
+# Mean NMI: 0.7756 | SD NMI: 0.0241
+# Mean ACC: 0.6879 | SD ACC: 0.0435
 
 experiments$last <- experiments$last + 1 + n_reps - 1
+
+
+################################
+# GMM + RP All features (No UFS)
+################################
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiments_rep <- run_RPClu_experiments(data_all = data$x,
+                                           top_features = NULL,
+                                           ref_labels = as.integer(data$y),
+                                           algorithms = best_clustering,
+                                           consensus_method = best_consensus,
+                                           B = B, k = k,
+                                           dataset = "warpPIE10P",
+                                           UFS_method = "No UFS",
+                                           rp = TRUE,
+                                           seed = seed)
+  print(experiments_rep$first)
+}
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+
+# 703-722 #
+# Mean ARI: 0.2496 | SD ARI: 0.03
+# Mean NMI: 0.551 | SD NMI: 0.0253
+# Mean ACC: 0.4157 | SD ACC: 0.0273
+
+experiments$last <- experiments$last + 1 + n_reps - 1
+
+###########################
+# Inf-FS2020 + GMM (No RP)
+###########################
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiment_id <- run_clustering_experiments(data_all = data$x,
+                                              top_features = top_features,
+                                              ref_labels = as.integer(data$y),
+                                              algorithms = best_clustering,
+                                              consensus_method = best_consensus,
+                                              k = k,
+                                              dataset = "warpPIE10P",
+                                              UFS_method = "Inf-FS2020",
+                                              seed = seed)
+  print(experiment_id)
+}
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+
+# 723-742 #
+# Mean ARI:0.1173 | SD ARI:0.1888
+# Mean NMI:0.2161 | SD NMI:0.2722
+# Mean ACC:0.5585 | SD ACC:0.1228
+
+experiments$last <- experiments$last + 1 + n_reps - 1
+
+#################################
+# GMM All features (No RP, NO UFS)
+#################################
+
+## Repetitions of best clustering and best consensus
+
+n_reps <- 20
+for (i in 1:n_reps) {
+  seed <- 100 + i
+  experiment_id <- run_clustering_experiments(data_all = data$x,
+                                              top_features = NULL,
+                                              ref_labels = as.integer(data$y),
+                                              algorithms = best_clustering,
+                                              consensus_method = best_consensus,
+                                              k = k,
+                                              dataset = "warpPIE10P",
+                                              UFS_method = "No UFS",
+                                              seed = seed)
+  print(experiment_id)
+}
+
+evaluate_experiments(experiments$last + 1,
+                     experiments$last + 1 + n_reps - 1)
+
+# 743-762 #
+# Mean ARI: 0.1276 | SD ARI: 0.0359
+# Mean NMI: 0.3645 | SD NMI: 0.0356
+# Mean ACC: 0.3121 | SD ACC: 0.0318
+
+experiments$last <- experiments$last + 1 + n_reps - 1
+
+
+
+run_pipeline <- function(dataset, dataset_name, k, top_features, top_metric="ARI") {
+  B <- ceiling(length(top_features) / 100) * 10
+  B <- min(B, 100)
+
+  print(sprintf("%d rows, %d features, %d top features, %d random projections, %d clusters",
+          nrow(dataset$x), ncol(dataset$x), length(top_features), B, k))
+
+  print("Selecting clustering and consensus methods")
+  seed <- 101
+  experiments <- run_RPClu_experiments(data_all=dataset$x,
+                                       top_features = top_features,
+                                       ref_labels = as.integer(dataset$y),
+                                       algorithms = algorithms,
+                                       B=B, k=k,
+                                       dataset = dataset_name,
+                                       UFS_method = "Inf-FS2020",
+                                       rp = TRUE,
+                                       seed = seed)
+  print(experiments)
+
+  top_summary <- summarize_top_metrics(experiments, top_n = 10)
+  top_metric <- subset(top_summary, metric == top_metric)
+  top_metric <- top_metric[order(-top_metric$value, top_metric$clustering_method), ]
+  print(top_metric)
+
+  best_clustering <- top_metric$clustering_method[1]
+  best_consensus <- top_metric$consensus_method[1]
+
+  print(sprintf("Best Clustering: %s, Best Consensus: %s",
+              best_clustering, best_consensus))
+
+
+  ## Repetitions of best clustering and best consensus (RP + UFS)
+
+  n_reps <- 20
+  for (i in 1:n_reps) {
+    seed <- 100 + i
+    experiments_rep <- run_RPClu_experiments(data_all = dataset$x,
+                                             top_features = top_features,
+                                             ref_labels = as.integer(dataset$y),
+                                             algorithms = best_clustering,
+                                             consensus_method = best_consensus,
+                                             B = B, k = k,
+                                             dataset = dataset_name,
+                                             UFS_method = "Inf-FS2020",
+                                             rp = TRUE,
+                                             seed = seed)
+    print(experiments_rep$first)
+  }
+  print("Repetitions of best clustering and best consensus (RP + UFS)")
+  evaluate_experiments(experiments$last + 1,
+                       experiments$last + 1 + n_reps - 1)
+
+
+  experiments$last <- experiments$last + 1 + n_reps - 1
+
+
+  ## Repetitions of best clustering and best consensus (RP + NO UFS)
+
+  n_reps <- 20
+  for (i in 1:n_reps) {
+    seed <- 100 + i
+    experiments_rep <- run_RPClu_experiments(data_all = dataset$x,
+                                             top_features = NULL,
+                                             ref_labels = as.integer(dataset$y),
+                                             algorithms = best_clustering,
+                                             consensus_method = best_consensus,
+                                             B = B, k = k,
+                                             dataset = dataset_name,
+                                             UFS_method = "No UFS",
+                                             rp = TRUE,
+                                             seed = seed)
+    print(experiments_rep$first)
+  }
+
+  print("Repetitions of best clustering and best consensus (RP + NO UFS)")
+  evaluate_experiments(experiments$last + 1,
+                       experiments$last + 1 + n_reps - 1)
+
+  experiments$last <- experiments$last + 1 + n_reps - 1
+
+  ## Repetitions of best clustering and best consensus (NO RP + UFS)
+
+  n_reps <- 20
+  for (i in 1:n_reps) {
+    seed <- 100 + i
+    experiment_id <- run_clustering_experiments(data_all = dataset$x,
+                                                top_features = top_features,
+                                                ref_labels = as.integer(dataset$y),
+                                                algorithms = best_clustering,
+                                                consensus_method = best_consensus,
+                                                k = k,
+                                                dataset = dataset_name,
+                                                UFS_method = "Inf-FS2020",
+                                                seed = seed)
+    print(experiment_id)
+  }
+
+  print("Repetitions of best clustering and best consensus (NO RP + UFS)")
+  evaluate_experiments(experiments$last + 1,
+                       experiments$last + 1 + n_reps - 1)
+
+  experiments$last <- experiments$last + 1 + n_reps - 1
+
+  ## Repetitions of best clustering and best consensus (NO RP + NO UFS)
+
+  n_reps <- 20
+  for (i in 1:n_reps) {
+    seed <- 100 + i
+    experiment_id <- run_clustering_experiments(data_all = dataset$x,
+                                                top_features = NULL,
+                                                ref_labels = as.integer(dataset$y),
+                                                algorithms = best_clustering,
+                                                consensus_method = best_consensus,
+                                                k = k,
+                                                dataset = dataset_name,
+                                                UFS_method = "No UFS",
+                                                seed = seed)
+    print(experiment_id)
+  }
+
+  print("Repetitions of best clustering and best consensus (NO RP + NO UFS)")
+  evaluate_experiments(experiments$last + 1,
+                       experiments$last + 1 + n_reps - 1)
+
+  experiments$last <- experiments$last + 1 + n_reps - 1
+
+
+}
+
+########################################################
+########################################################
+# lymphoma
+########################################################
+########################################################
+
+data(lymphoma)
+
+data <- lymphoma
+
+data$y <- data$y+1
+
+mean(data$x)
+sd(data$x)
+
+# Run just once
+UFS_results_file <- "experiments/UFS_lymphoma_Inf-FS2020.RData"
+# UFS_results <- runUFS(data$x, UFS_Methods)
+#save(UFS_results, file = UFS_results_file)
+
+load(UFS_results_file)
+method = "Inf-FS2020"
+top_features <- UFS_results$Results[[method]]$Result[[3]]
+
+run_pipeline(dataset = data,
+             dataset_name = "lymphoma",
+             k = 3,
+             top_features = top_features,
+             top_metric = "ARI")
+
+
+########################################################
+########################################################
+# ALLAML
+########################################################
+########################################################
+
+data(ALLAML)
+
+data <- ALLAML
+
+mean(data$x)
+sd(data$x)
+
+# Run just once
+UFS_results_file <- "experiments/UFS_ALLAML_Inf-FS2020.RData"
+UFS_results <- runUFS(data$x, UFS_Methods)
+save(UFS_results, file = UFS_results_file)
+
+load(UFS_results_file)
+method = "Inf-FS2020"
+top_features <- UFS_results$Results[[method]]$Result[[3]]
+
+run_pipeline(dataset = data,
+             dataset_name = "ALLAML",
+             k = 2,
+             top_features = top_features,
+             top_metric = "ACC")
+
+
+########################################################
+########################################################
+# warpAR10P
+########################################################
+########################################################
+data(warpAR10P)
+
+data <- warpAR10P
+
+mean(data$x)
+sd(data$x)
+
+min(data$x)
+max(data$x)
+
+data$x <- apply(data$x, 2, rescale)
+
+mean(data$x)
+sd(data$x)
+min(data$x)
+max(data$x)
+
+# Run just once
+UFS_results_file <- "experiments/UFS_warpAR10P_Inf-FS2020.RData"
+UFS_results <- runUFS(data$x, UFS_Methods)
+save(UFS_results, file = UFS_results_file)
+
+load(UFS_results_file)
+method = "Inf-FS2020"
+top_features <- UFS_results$Results[[method]]$Result[[3]]
+
+run_pipeline(dataset = data,
+             dataset_name = "warpAR10P",
+             k = 20,
+             top_features = top_features,
+             top_metric = "ACC")
