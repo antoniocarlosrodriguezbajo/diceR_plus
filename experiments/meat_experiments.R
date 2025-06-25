@@ -104,7 +104,9 @@ plot_metrics_vs_num_features2 <- function(data1, legend_data1,
   long_metrics <- pivot_longer(combined_metrics, cols = -c(num_features, source), names_to = "metric", values_to = "value")
 
   # Remove the 's_dbw' metric
-  long_metrics <- long_metrics[long_metrics$metric != "s_dbw", ]
+  #long_metrics <- long_metrics[long_metrics$metric != "s_dbw", ]
+  long_metrics <- long_metrics[long_metrics$metric %in% c("silhouette", "davies_bouldin", "calinski_harabasz", "c_index"), ]
+
 
   # Assign metric labels
   long_metrics$metric_label <- ifelse(long_metrics$metric %in% positive_metrics,
@@ -356,7 +358,7 @@ plotInfFS_internal <- plot_metrics_vs_num_features2(experiments_data_all[filter_
                                                     experiments_data_all[filter_100,], "B=100,B*=10",
                                                     "RPEClu params",
                                                    internal = TRUE,
-                                                   "Number of selected features (InfFS) vs internal metrics",
+                                                   "Number of selected features (Inf-FS) vs internal metrics",
                                                    "Number of features (meat dataset)",
                                                    "infFS_meat_internal.eps")
 print(plotInfFS_internal)
@@ -366,7 +368,7 @@ plotInfFS_external <- plot_metrics_vs_num_features2(experiments_data_all[filter_
                                                     experiments_data_all[filter_100,], "B=100,B*=10",
                                                    internal = FALSE,
                                                    "RPEClu params",
-                                                   "Number of selected features (infFS) vs ARI",
+                                                   "Number of selected features (Inf-FS) vs ARI",
                                                    "Number of features (meat dataset)",
                                                    "infFS_meat_external.eps")
 print(plotInfFS_external)
