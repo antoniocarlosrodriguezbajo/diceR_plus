@@ -311,7 +311,9 @@ RPGMMClu_noens_parallel <- function(x, true.cl=NULL, g, d = NULL, c = 10, B = 10
   cl.ens.1 <- data.frame(cl.m[, order(Bic, decreasing=TRUE)[1:B.star]])
   cl.ens.1.2 <- lapply(cl.ens.1, function(x) as.cl_membership(x))
 
-  individual <- list(label.vec = cl.ens.1, ari = Ari, bic = Bic)
+  Ari.ens <- sapply(cl.ens.1, function(cl) adjustedRandIndex(cl, true.cl))
+
+  individual <- list(label.vec = cl.ens.1, ari = Ari.ens, bic = Bic)
 
   return(individual)
 }
@@ -401,6 +403,6 @@ RPClu_parallel <- function(x,
   clustering_matrix <- do.call(cbind, lapply(results, function(x) x$clustering))
   ari_vec <- sapply(results, function(x) x$ari)
 
-  return(list(clusterings = clustering_matrix))
+  return(list(clusterings = clustering_matrix, ari=ari_vec))
 }
 

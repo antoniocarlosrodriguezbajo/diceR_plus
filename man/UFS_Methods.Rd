@@ -5,7 +5,7 @@
 \alias{UFS_Methods}
 \title{Unsupervised Feature Selection Methods}
 \format{
-A list with method names and logical values indicating AutoHotkey usage.
+An object of class \code{list} of length 21.
 }
 \usage{
 data(UFS_Methods)
@@ -14,5 +14,6 @@ data(UFS_Methods)
 List of methods used in unsupervised feature selection analysis.
 If a method is set to \code{TRUE}:
 the AutoHotkey script will send \code{1} to MATLAB as input for default parameters.
+#' @format A list with method names and logical values indicating AutoHotkey usage.
 }
 \keyword{datasets}

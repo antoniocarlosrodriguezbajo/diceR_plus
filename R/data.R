@@ -221,13 +221,25 @@
 #' Meat$y
 "Meat"
 
+#'GLIOMA
+#'
+#' @format TBD.
+#' @usage data(GLIOMA)
+"GLIOMA"
+
+#'TOX_171
+#'
+#'
+#' @format TBD.
+#' @usage data(TOX_171)
+"TOX_171"
+
+
 #' Unsupervised Feature Selection Methods
 #'
 #' List of methods used in unsupervised feature selection analysis.
 #' If a method is set to `TRUE`:
 #' the AutoHotkey script will send `1` to MATLAB as input for default parameters.
-#'
-#' @format A list with method names and logical values indicating AutoHotkey usage.
+#' #' @format A list with method names and logical values indicating AutoHotkey usage.
 #' @usage data(UFS_Methods)
 "UFS_Methods"
-

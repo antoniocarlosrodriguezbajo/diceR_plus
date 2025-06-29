@@ -11,6 +11,11 @@ algorithms = c("nmf", "hc", "diana", "km", "pam", "ap", "sc",
 
 algorithms = c("gmm")
 
+mean_abs_correlation <- function(data) {
+  cor_mat <- cor(data, use = "pairwise.complete.obs")
+  round(mean(abs(cor_mat[upper.tri(data)])),4)
+}
+
 
 calculate_consensus_labels <- function(E, k, ref_labels, method = NULL) {
   # Reshape the input matrix E into a 4D array for methods that require it (e.g., CSPA)
@@ -20,11 +25,11 @@ calculate_consensus_labels <- function(E, k, ref_labels, method = NULL) {
 
   # Define the list of available consensus methods and their parameters
   consensus_methods <- list(
-    #kmodes   = function(E) k_modes(E, is.relabelled = FALSE, seed = 1),
-    #majority = function(E) majority_voting(E, is.relabelled = FALSE),
-    LCE      = function(E) LCE(E, k, sim.mat = "cts")
-    #LCA      = function(E) LCA(E, is.relabelled = FALSE, seed = 1),
-    #CSPA     = function(E) CSPA(E_4d, k)
+    kmodes   = function(E) k_modes(E, is.relabelled = FALSE, seed = 1),
+    majority = function(E) majority_voting(E, is.relabelled = FALSE),
+    LCE      = function(E) LCE(E, k, sim.mat = "cts"),
+    LCA      = function(E) LCA(E, is.relabelled = FALSE, seed = 1),
+    CSPA     = function(E) CSPA(E_4d, k)
   )
 
   # If a specific method is provided, apply only that one
@@ -106,10 +111,12 @@ run_RPClu_experiments <- function(data_all,
                                         g = k,
                                         B = B,
                                         rp = rp,
+                                        true.cl = ref_labels,
                                         method_rp = method_rp,
                                         seed = seed)
       })["elapsed"]
 
+      print(mean(RPClu_results$ari))
 
       E = as.matrix(RPClu_results$clusterings)
 
@@ -299,7 +306,43 @@ evaluate_experiments <- function(first_id, n_reps) {
   cat("Mean ACC:", round(acc$mean, 4), "| SD ACC:", round(acc$sd, 4), "\n")
 }
 
-run_pipeline <- function(dataset, dataset_name, k, top_features, top_metric="ARI") {
+compare_experiments <- function(first_id_A, first_id_B, n_reps = 20, metric = "ari") {
+  # Load all experiments
+  all_experiments <- load_experiments()
+
+  # Get experiment subsets
+  last_id_A <- first_id_A + n_reps - 1
+  last_id_B <- first_id_B + n_reps - 1
+
+  A_exps <- subset(all_experiments, experiment_id >= first_id_A & experiment_id <= last_id_A)
+  B_exps <- subset(all_experiments, experiment_id >= first_id_B & experiment_id <= last_id_B)
+
+  # Extract metric values
+  get_metric_values <- function(exps) {
+    sapply(exps$external_metrics, function(x) x[[metric]])
+  }
+
+  vals_A <- get_metric_values(A_exps)
+  vals_B <- get_metric_values(B_exps)
+
+  # Summary
+  summary_A <- c(mean = mean(vals_A, na.rm = TRUE), sd = sd(vals_A, na.rm = TRUE))
+  summary_B <- c(mean = mean(vals_B, na.rm = TRUE), sd = sd(vals_B, na.rm = TRUE))
+
+  # Mann-Whitney U Test
+  test_result <- wilcox.test(vals_A, vals_B, alternative = "greater")  # A > B
+
+  # Output
+  cat(sprintf("Comparison on '%s':\n", metric))
+  cat("Experiment A | Mean:", round(summary_A["mean"], 4), "| SD:", round(summary_A["sd"], 4), "\n")
+  cat("Experiment B | Mean:", round(summary_B["mean"], 4), "| SD:", round(summary_B["sd"], 4), "\n")
+  cat("Mann-Whitney U p-value (A > B):", format.pval(test_result$p.value, digits = 4), "\n")
+
+  invisible(test_result)
+}
+
+
+run_pipeline <- function(dataset, dataset_name, k, top_features, top_metric="ARI", n_reps=20) {
   B <- ceiling(length(top_features) / 100) * 10
   B <- min(B, 100)
 
@@ -333,7 +376,7 @@ run_pipeline <- function(dataset, dataset_name, k, top_features, top_metric="ARI
 
   ## Repetitions of best clustering and best consensus (RP + UFS)
 
-  n_reps <- 20
+  n_reps <- n_reps
   for (i in 1:n_reps) {
     seed <- 100 + i
     experiments_rep <- run_RPClu_experiments(data_all = dataset$x,
@@ -358,7 +401,7 @@ run_pipeline <- function(dataset, dataset_name, k, top_features, top_metric="ARI
 
   ## Repetitions of best clustering and best consensus (RP + NO UFS)
 
-  n_reps <- 20
+  n_reps <- n_reps
   for (i in 1:n_reps) {
     seed <- 100 + i
     experiments_rep <- run_RPClu_experiments(data_all = dataset$x,
@@ -382,7 +425,7 @@ run_pipeline <- function(dataset, dataset_name, k, top_features, top_metric="ARI
 
   ## Repetitions of best clustering and best consensus (NO RP + UFS)
 
-  n_reps <- 20
+  n_reps <- n_reps
   for (i in 1:n_reps) {
     seed <- 100 + i
     experiment_id <- run_clustering_experiments(data_all = dataset$x,
@@ -405,7 +448,7 @@ run_pipeline <- function(dataset, dataset_name, k, top_features, top_metric="ARI
 
   ## Repetitions of best clustering and best consensus (NO RP + NO UFS)
 
-  n_reps <- 20
+  n_reps <- n_reps
   for (i in 1:n_reps) {
     seed <- 100 + i
     experiment_id <- run_clustering_experiments(data_all = dataset$x,
@@ -443,6 +486,9 @@ data <- Meat
 mean(data$x)
 sd(data$x)
 
+mean_abs_correlation(data$x)
+# 0.8426
+
 # UFS
 UFS_results_file <- "experiments/UFS_Meat_Inf-FS2020.RData"
 UFS_results <- runUFS(data$x, UFS_Methods)
@@ -453,6 +499,8 @@ load(UFS_results_file)
 method = "Inf-FS2020"
 top_features <- UFS_results$Results[[method]]$Result[[3]]
 
+mean_abs_correlation(data$x[,top_features])
+
 run_pipeline(dataset = data,
              dataset_name = "Meat",
              k = 5,
@@ -460,6 +508,24 @@ run_pipeline(dataset = data,
              top_metric = "ARI")
 
 
+compare_experiments(298,318)
+
+# Comparison on 'ari':
+# Experiment A | Mean: 0.6862 | SD: 0.0061
+# Experiment B | Mean: 0.2996 | SD: 0.0175
+# Mann-Whitney U p-value (A > B): 2.235e-08
+
+compare_experiments(298,338)
+# Comparison on 'ari':
+# Experiment A | Mean: 0.6862 | SD: 0.0061
+# Experiment B | Mean: 0.4747 | SD: 0.0308
+# Mann-Whitney U p-value (A > B): 2.235e-08
+
+compare_experiments(298,358)
+# Comparison on 'ari':
+# Experiment A | Mean: 0.6862 | SD: 0.0061
+# Experiment B | Mean: 0.1556 | SD: 0.0184
+# Mann-Whitney U p-value (A > B): 2.235e-08
 
 ########################################################
 ########################################################
@@ -474,15 +540,20 @@ data <- lung_cancer
 mean(data$x)
 sd(data$x)
 
+mean_abs_correlation(data$x)
+# 0.1467
+
 # UFS
 UFS_results_file <- "experiments/UFS_lung_cancer_Inf-FS2020.RData"
-# UFS_results <- runUFS(data$x, UFS_Methods)
-# save(UFS_results, file = UFS_results_file)
+UFS_results <- runUFS(data$x, UFS_Methods)
+save(UFS_results, file = UFS_results_file)
 
 load(UFS_results_file)
 
 method = "Inf-FS2020"
 top_features <- UFS_results$Results[[method]]$Result[[3]]
+
+mean_abs_correlation(data$x[,top_features])
 
 run_pipeline(dataset = data,
              dataset_name = "Lung Cancer",
@@ -506,6 +577,9 @@ data$y <- data$y+1
 mean(data$x)
 sd(data$x)
 
+mean_abs_correlation(data$x)
+# 0.2108
+
 # UFS
 UFS_results_file <- "experiments/UFS_lymphoma_Inf-FS2020.RData"
 UFS_results <- runUFS(data$x, UFS_Methods)
@@ -514,6 +588,9 @@ save(UFS_results, file = UFS_results_file)
 load(UFS_results_file)
 method = "Inf-FS2020"
 top_features <- UFS_results$Results[[method]]$Result[[3]]
+
+mean_abs_correlation(data$x[,top_features])
+# 0.137
 
 run_pipeline(dataset = data,
              dataset_name = "lymphoma",
@@ -536,6 +613,9 @@ data <- prostate_ge
 mean(data$x)
 sd(data$x)
 
+mean_abs_correlation(data$x)
+#0.4118
+
 # UFS
 UFS_results_file <- "experiments/UFS_prostate_ge_Inf-FS2020.RData"
 UFS_results <- runUFS(data$x, UFS_Methods)
@@ -545,6 +625,10 @@ load(UFS_results_file)
 
 method = "Inf-FS2020"
 top_features <- UFS_results$Results[[method]]$Result[[3]]
+
+mean_abs_correlation(data$x[,top_features])
+
+#0.152
 
 run_pipeline(dataset = data,
              dataset_name = "prostate_ge",
@@ -575,6 +659,9 @@ sd(data$x)
 min(data$x)
 max(data$x)
 
+mean_abs_correlation(data$x)
+# 0.4103
+
 # UFS
 UFS_results_file <- "experiments/UFS_warpPIE10P_Inf-FS2020.RData"
 UFS_results <- runUFS(data$x, UFS_Methods)
@@ -584,6 +671,10 @@ load(UFS_results_file)
 method = "Inf-FS2020"
 top_features <- UFS_results$Results[[method]]$Result[[3]]
 
+mean_abs_correlation(data$x[,top_features])
+# 0.2774
+
+
 run_pipeline(dataset = data,
              dataset_name = "warpPIE10P",
              k = 10,
@@ -592,12 +683,314 @@ run_pipeline(dataset = data,
 
 
 
+########################################################
+########################################################
+# TOX_171
+########################################################
+########################################################
+
+data(TOX_171)
+
+data <- TOX_171
+
+mean(data$x)
+sd(data$x)
+min(data$x)
+max(data$x)
+
+data$x <- scale(data$x)
+mean(data$x)
+sd(data$x)
+min(data$x)
+max(data$x)
+
+mean_abs_correlation(data$x)
+# 0.1453
+
+# UFS
+UFS_results_file <- "experiments/UFS_TOX_171_Inf-FS2020_08.RData"
+UFS_results <- runUFS_manual_params(data$x, names(UFS_Methods))
+save(UFS_results, file = UFS_results_file)
+
+load(UFS_results_file)
+method = "Inf-FS2020"
+top_features <- UFS_results$Results[[method]]$Result[[3]]
+
+mean_abs_correlation(data$x[,top_features])
+# 0.0945
+
+
+run_pipeline(dataset = data,
+             dataset_name = "TOX_171",
+             k = 4,
+             top_features = top_features,
+             top_metric = "ACC",
+             n_reps = 2)
+
 
 ########################################################
 ########################################################
-# ALLAML
+# lung_cancer
 ########################################################
 ########################################################
+
+data(lung_cancer)
+
+data <- lung_cancer
+
+mean(data$x)
+sd(data$x)
+
+
+
+
+
+mean_abs_correlation(data$x)
+# 0.1467
+
+ncol(data$x)
+
+data$x<- prepare_data(data$x)
+ncol(data$x)
+
+pca <- prcomp(data$x, scale. = TRUE)
+var_exp <- summary(pca)$importance[2, ]
+cum_var_90 <- which(cumsum(var_exp) > 0.9)[1]
+cum_var_90
+
+run_pipeline(dataset = data,
+             dataset_name = "Lung Cancer TT",
+             k = 5,
+             top_features = seq(from = 1, to = ncol(data$x)),
+             top_metric = "ARI",
+             n_reps = 2)
+# metric clustering_method consensus_method  value
+# 1     ARI               gmm              LCE 0.7513
+# 2     ARI                ap              LCE 0.7134
+# 3     ARI                sc         majority 0.6269
+# 4     ARI            cmeans              LCE 0.6113
+# 5     ARI               som             CSPA 0.6017
+# 6     ARI               som              LCA 0.5938
+# 7     ARI               pam              LCE 0.5903
+# 8     ARI                sc              LCE 0.5786
+# 9     ARI                km              LCE 0.5755
+# 10    ARI             diana              LCE 0.5748
+# [1] "Best Clustering: gmm, Best Consensus: LCE"
+
+# [1] "Repetitions of best clustering and best consensus (RP + UFS)"
+# Mean ARI: 0.7698 | SD ARI: 0.0262
+# Mean NMI: 0.698 | SD NMI: 0.0254
+# Mean ACC: 0.904 | SD ACC: 0.0035
+# [1] "gmm"
+# LCE: ARI:0.7513 NMI:0.6800 ACC:0.9015
+# [1] 1427
+# [1] "gmm"
+# LCE: ARI:0.7883 NMI:0.7159 ACC:0.9064
+# [1] 1428
+# [1] "Repetitions of best clustering and best consensus (RP + NO UFS)"
+# Mean ARI: 0.7698 | SD ARI: 0.0262
+# Mean NMI: 0.698 | SD NMI: 0.0254
+# Mean ACC: 0.904 | SD ACC: 0.0035
+# [1] 1429
+# [1] 1430
+# [1] "Repetitions of best clustering and best consensus (NO RP + UFS)"
+# Mean ARI: 0.3376 | SD ARI: 8e-04
+# Mean NMI: 0.4617 | SD NMI: 0.0034
+# Mean ACC: 0.7389 | SD ACC: 0.0069
+# [1] 1431
+# [1] 1432
+# [1] "Repetitions of best clustering and best consensus (NO RP + NO UFS)"
+# Mean ARI: 0.3376 | SD ARI: 8e-04
+# Mean NMI: 0.4617 | SD NMI: 0.0034
+# Mean ACC: 0.7389 | SD ACC: 0.0069
+
+
+data(lung_cancer)
+
+data <- lung_cancer
+data$x <- scale(data$x)
+mean(data$x)
+sd(data$x)
+
+mean_abs_correlation(data$x)
+# 0.1467
+
+# UFS
+
+UFS_Methods <- list(
+  "RUFS" = TRUE
+)
+
+UFS_results_file <- "experiments/UFS_lung_cancer_RUFS.RData"
+UFS_results <- runUFS(data$x, UFS_Methods)
+save(UFS_results, file = UFS_results_file)
+
+load(UFS_results_file)
+
+method = "RUFS"
+top_features <- UFS_results$Results[[method]]$Result[[3]]
+
+N <- 200
+top_features <- UFS_results$Results[[method]]$Result[[1]]
+
+run_pipeline(dataset = data,
+             dataset_name = "Lung Cancer TT2",
+             k = 5,
+             top_features = top_features,
+             top_metric = "ARI",
+             n_reps = 10)
+
+
+mean_abs_correlation(data$x[,top_features])
+
+run_pipeline(dataset = data,
+             dataset_name = "Lung Cancer",
+             k = 5,
+             top_features = top_features,
+             top_metric = "ARI",
+             n_reps = 2)
+
+
+data(lymphoma)
+
+data <- lymphoma
+
+data(prostate_ge)
+
+data <- prostate_ge
+
+data(ALLAML)
+
+data <- ALLAML
+mean(data$x)
+sd(data$x)
+
+data(lung_cancer)
+
+data <- lung_cancer
+
+data$x<- prepare_data(data$x)
+
+result <- RPGMMClu_noens_parallel(data$x, true.cl=as.integer(data$y),g=5,B=200,B.star=20)
+
+result2 <- RPClu_parallel(data$x, true.cl=as.integer(data$y),g=5,B=20)
+
+
+
+data(lung_cancer)
+
+data <- lung_cancer
+
+mean(data$x)
+sd(data$x)
+
+mean_abs_correlation(data$x)
+# 0.1467
+
+# UFS
+UFS_results_file <- "experiments/UFS_lung_cancer_Inf-FS2020.RData"
+UFS_results <- runUFS(data$x, UFS_Methods)
+save(UFS_results, file = UFS_results_file)
+
+load(UFS_results_file)
+
+method = "Inf-FS2020"
+top_features <- UFS_results$Results[[method]]$Result[[3]]
+
+mean_abs_correlation(data$x[,top_features])
+
+run_pipeline(dataset = data,
+             dataset_name = "Lung Cancer",
+             k = 5,
+             top_features = top_features,
+             top_metric = "ARI")
+
+
+result <- RPGMMClu_noens_parallel(data$x[,top_features], true.cl=as.integer(data$y),g=5,B=200,B.star=20)
+
+result2 <- RPClu_parallel(data$x[,top_features], true.cl=as.integer(data$y),g=5,B=200)
+
+
+
+data(prostate_ge)
+
+data <- prostate_ge
+
+mean(data$x)
+sd(data$x)
+
+data$x <- scale(data$x)
+
+mean_abs_correlation(data$x)
+#0.4118
+
+# UFS
+UFS_results_file <- "experiments/UFS_prostate_ge_RUFS.RData"
+UFS_results <- runUFS(data$x, UFS_Methods)
+save(UFS_results, file = UFS_results_file)
+
+load(UFS_results_file)
+
+method = "RUFS"
+top_features <- UFS_results$Results[[method]]$Result[[3]]
+
+top_features <- UFS_results$Results[[method]]$Result[[1]]
+
+mean_abs_correlation(data$x[,top_features])
+
+#0.152
+
+run_pipeline(dataset = data,
+             dataset_name = "prostate_ge",
+             k = 2,
+             top_features = top_features,
+             top_metric = "ACC")
+
+UFS_results$Results[[method]]$Result[[1]]
+
+
+
+data(COIL20)
+
+data <- COIL20
+
+mean(data$x)
+sd(data$x)
+
+
+
+mean_abs_correlation(data$x)
+#0.4118
+
+UFS_Methods <- list(
+  "RNE" = TRUE
+)
+
+# UFS
+UFS_results_file <- "experiments/UFS_COIL_RNE.RData"
+UFS_results <- runUFS_manual_params(data$x, names(UFS_Methods))
+save(UFS_results, file = UFS_results_file)
+
+load(UFS_results_file)
+
+method = "RNE"
+top_features <- UFS_results$Results[[method]]$Result[[3]]
+
+top_features <- UFS_results$Results[[method]]$Result[[1]]
+
+mean_abs_correlation(data$x[,top_features])
+
+#0.152
+
+run_pipeline(dataset = data,
+             dataset_name = "COIL20",
+             k = 20,
+             n_reps = 2,
+             top_features = top_features,
+             top_metric = "ACC")
+
+UFS_results$Results[[method]]$Result[[1]]
+
 
 data(ALLAML)
 
@@ -606,17 +999,66 @@ data <- ALLAML
 mean(data$x)
 sd(data$x)
 
-# Run just once
-UFS_results_file <- "experiments/UFS_ALLAML_Inf-FS2020.RData"
-UFS_results <- runUFS(data$x, UFS_Methods)
+UFS_Methods <- list(
+  "DGUFS" = TRUE
+)
+
+UFS_results_file <- "experiments/UFS_ALLAML_DGUFS.RData"
+UFS_results <- runUFS_manual_params(data$x, names(UFS_Methods))
 save(UFS_results, file = UFS_results_file)
 
 load(UFS_results_file)
-method = "Inf-FS2020"
-top_features <- UFS_results$Results[[method]]$Result[[3]]
+
+method = "DGUFS"
+
+
+top_features <- UFS_results$Results[[method]]$Result[[1]]
+
+mean_abs_correlation(data$x[,top_features])
+
+#0.152
 
 run_pipeline(dataset = data,
-             dataset_name = "ALLAML",
+             dataset_name = "prostate_ge",
              k = 2,
              top_features = top_features,
              top_metric = "ACC")
+
+
+
+library(R.matlab)
+
+data(ALLAML)
+
+data <- ALLAML
+
+mean(data$x)
+sd(data$x)
+
+
+
+# Start MATLAB server
+Matlab$startServer()
+matlab <- Matlab()
+print(matlab)
+
+# Check if MATLAB server is running
+isOpen <- open(matlab)
+if (!isOpen) {
+  print("MATLAB server is not running: waited 30 seconds.")
+}
+print(matlab)
+
+# Set the dataset variable
+setVariable(matlab, X = data$x)
+
+# Evaluate MATLAB command to display variables
+evaluate(matlab, "whos")
+
+evaluate(matlab, "rng('default');")
+evaluate(matlab, "rng(42);")
+
+# DGUFS(X,nClass,S,alpha,beta,nSel)
+cmd <- sprintf('Result = Auto_UFSTool(X, "%d");', 2, )
+
+close(matlab)
